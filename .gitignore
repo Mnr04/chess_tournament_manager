@@ -1,0 +1,11 @@
+# macOS specific system files
+.DS_Store
+
+# --- Python ---
+
+# Virtual environment directories
+/env/
+/venv/
+
+# Python cache
+__pycache__/
