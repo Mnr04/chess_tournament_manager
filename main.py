@@ -1,7 +1,7 @@
-from controller import Controller
+from controller import Main_controller
 
 def main():
-    app = Controller()
+    app = Main_controller()
     app.run()
 
 if __name__ == "__main__":

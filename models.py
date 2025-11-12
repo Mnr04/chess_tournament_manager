@@ -11,27 +11,35 @@ class Player():
         self.id = None 
 
     def get_all_players():
-        players_list = []
-        directory = "data"
-        file_path = os.path.join(directory, "players_infos.json")
+        file_path = os.path.join("data", "players_infos.json")
 
         try : 
             with open (file_path , "r") as file:
-                    all_players = json.load(file)
+                return json.load(file)
+        except (FileNotFoundError ,json.JSONDecodeError):   
+            return []
+    
+    def get_players_by_id(id_to_find, players_list):
+        return next((p for p in players_list if p["id"] == id_to_find),None)
 
-            for players in all_players:
-                full_name = players['name'] + ' '  + players['surname']
-                players_list.append(full_name)
+    @classmethod
+    def update_players(cls, player_info, player_data) :
+       #charge la liste entiere 
+       all_players = cls.get_all_players()
+       #Trouve le joueur (par son ID) et remplace ses données par les nouvelles.
+       player = cls.get_players_by_id(player_info, all_players)
+       #Écrase tout le fichier JSON avec la liste mise à jour.
+       player["surname"] = player_data['surname']
+       player["name"] = player_data['name']
+       player["age"] = player_data['age']
+       player["ine"] = player_data['ine']
 
-            return players_list
+       file_path = os.path.join('data', "players_infos.json")
+       with open(file_path, "w") as file:
+            json.dump(all_players, file, indent=2)
 
-        except:
-            print("Player list empty")
-            return players_list
-        
     def save_new_player(self):
-        directory = "data"
-        file_path = os.path.join(directory, "players_infos.json")
+        file_path = os.path.join('data', "players_infos.json")
 
         #Verify if exists
         os.makedirs("data", exist_ok=True)
@@ -58,3 +66,57 @@ class Player():
         #Modify the json files
         with open(file_path, "w") as file:
             json.dump(all_players, file, indent=2)
+
+
+class Tournament():
+    def __init__(self, name, city, date, tournament_tour_number, registred_player, description):
+        self.name = name
+        self.city = city
+        self.date = date
+        self.tournament_tour_number = tournament_tour_number
+        self.registred_player = registred_player
+        self.description = description
+        pass
+
+    def create_tournament(self):
+        tournois_info = {
+            "Name" : self.name,
+            "City" : self.city,
+            "Date": self.date,
+            "Total_tour_number": self.tournament_tour_number,
+            "Players": self.registred_player,
+            "Description": self.description
+        }
+        directory = "data"
+        tournament_name = self.name
+        file_path = os.path.join(directory, "tournament", tournament_name, "info.json")
+        directory_to_create = os.path.dirname(file_path)
+        os.makedirs(directory_to_create, exist_ok=True)
+
+        with open(file_path, "w") as file:
+            json.dump(tournois_info, file, indent=2)
+        
+    def get_all_tournaments():
+        tournaments_list = []
+        directory = "data"
+
+        directory_path = os.path.join(directory, "tournament")
+        
+        try:
+            for file_name in os.listdir(directory_path):
+                file_path = os.path.join(directory_path, file_name)
+                tournaments_list.append(file_name)
+            
+            return tournaments_list
+
+        except FileNotFoundError:
+            print("Folder don't exist")
+            return []
+
+
+class Round():
+    pass
+class Match():
+    def __init__(self):
+        pass
+
