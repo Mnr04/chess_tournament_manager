@@ -42,14 +42,16 @@ class Players_controller():
             menu_choice = {
                 "1": self.create_new_player,
                 "2": self.update_player,
-                "3": "",
+                "3": self.view_player,
+                "4": self.view_all_player,
+                "5": self.remove_player
             }
         
             if response in menu_choice:
                 user_choice = menu_choice[response]
                 user_choice()
                 
-            elif response == "4":
+            elif response == "6":
                  break
             
             else :
@@ -87,10 +89,11 @@ class Players_controller():
     
     # Update
     def update_player(self):
-        player_id = self.players_view.update_view()
-        all_players = Player.get_all_players()
-        
-        player_info = Player.get_players_by_id(player_id, all_players)
+        #on recupere un id
+        player_id = self.players_view.get_id_view()
+
+        #on recupere les info du joueur via son id 
+        player_info = Player.get_players_by_id(player_id)
 
         if not player_info:
             self.main_view.error("Player not found!")
@@ -111,12 +114,34 @@ class Players_controller():
         except Exception as e:
             self.main_view.error(f"Error: {e}")
 
+    # View
+    def view_player(self):
+        #Afficher une vue qui permet de choisir un joueur via son ID
+        player_id = self.players_view.get_id_view()
 
-      
+        #On récupère les infos du joueur
+        player_info = Player.get_players_by_id(player_id)
+
+        if not player_info:
+            self.main_view.error("Player not found!")
+            return
         
+        #On affiche ses données via un view
+        self.players_view.display_player_info(player_info)
 
-
-
+    # view all players
+    def view_all_player(self):
+        #On récupère tout les joueurs 
+        all_players = Player.get_all_players()
+        self.players_view.display_all_players(all_players)
+ 
+    # Remove player
+    def remove_player(self):
+        #recupere player with id
+        player_id = self.players_view.get_id_view()
+        #creer option dans le model qui va supprimer ce joueur de la base de données
+        Player.delete_player(player_id)
+        self.players_view.display_delete_view(player_id)
 
 
 

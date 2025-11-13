@@ -19,24 +19,30 @@ class Player():
         except (FileNotFoundError ,json.JSONDecodeError):   
             return []
     
-    def get_players_by_id(id_to_find, players_list):
+    @classmethod
+    def get_players_by_id(cls, id_to_find):
+        players_list = cls.get_all_players()
         return next((p for p in players_list if p["id"] == id_to_find),None)
 
     @classmethod
-    def update_players(cls, player_info, player_data) :
-       #charge la liste entiere 
+    def update_players(cls, player_id, player_data):
        all_players = cls.get_all_players()
-       #Trouve le joueur (par son ID) et remplace ses données par les nouvelles.
-       player = cls.get_players_by_id(player_info, all_players)
-       #Écrase tout le fichier JSON avec la liste mise à jour.
-       player["surname"] = player_data['surname']
-       player["name"] = player_data['name']
-       player["age"] = player_data['age']
-       player["ine"] = player_data['ine']
+       player_found = False
 
-       file_path = os.path.join('data', "players_infos.json")
-       with open(file_path, "w") as file:
-            json.dump(all_players, file, indent=2)
+       for player in all_players:
+           if player['id'] == player_id:
+               player["surname"] = player_data['surname']
+               player["name"] = player_data['name']
+               player["age"] = player_data['age']
+               player["ine"] = player_data['ine']
+               player_found = True
+               break 
+
+       if player_found:
+           file_path = os.path.join('data', "players_infos.json")
+           with open(file_path, "w") as file:
+                json.dump(all_players, file, indent=2)
+    
 
     def save_new_player(self):
         file_path = os.path.join('data', "players_infos.json")
@@ -67,6 +73,12 @@ class Player():
         with open(file_path, "w") as file:
             json.dump(all_players, file, indent=2)
 
+    @classmethod
+    def delete_player(cls, target_id):
+       all_players = [p for p in cls.get_all_players() if p['id'] != target_id]
+       file_path = os.path.join('data', "players_infos.json")
+       with open(file_path, "w") as file:
+            json.dump(all_players, file, indent=2)
 
 class Tournament():
     def __init__(self, name, city, date, tournament_tour_number, registred_player, description):
@@ -119,4 +131,5 @@ class Round():
 class Match():
     def __init__(self):
         pass
+
 

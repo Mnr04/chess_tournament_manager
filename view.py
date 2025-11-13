@@ -1,3 +1,4 @@
+from tabulate import tabulate
 
 class Main_view:
     #Message 
@@ -28,9 +29,10 @@ class Players_view():
         print("\Players Menu:")
         print(" [1] Create Player 👤")
         print(" [2] Update Player 🏆")
-        print(" [3] Remove Player")
         print(" [3] View Player")
-        print(" [4] Return ❌")
+        print(" [4] View All Player")
+        print(" [5] Remove Player")
+        print(" [6] Return ❌")
         reponse = input("Your choice: ")
         return reponse
     
@@ -46,9 +48,9 @@ class Players_view():
         return {"name": name, "surname": surname, "age": age, "ine": ine}
     
     #Update Player
-    def update_view(self):
-        print("\n--- Choose player to update ---")
-        player_id = input("Player id to update: " )
+    def get_id_view(self):
+        print("\n--- Choose player ---")
+        player_id = input("Player id: " )
         return player_id
     
     def update_player_inputs(self, player):
@@ -61,7 +63,28 @@ class Players_view():
 
         return {"name": name, "surname": surname, "age": age, "ine": ine}
     
-  
+    #View Player
+    @classmethod
+    def display_player_info(cls, player_info):
+        print(f"Id : {player_info['id']}")
+        print(f"Name : {player_info['name']}")
+        print(f"Surname : {player_info['surname']}")
+        print(f"Age : {player_info['age']}")
+        print(f"Ine : {player_info['ine']}")
+        
+        response = input("Press any button to return")
+        return response
+    @classmethod
+    #View all Players
+    def display_all_players(cls, all_players):
+        print(tabulate(all_players, headers="keys"))
+        
+        input("Press any button to return")
+
+    #Delete View
+    def display_delete_view(cls, player_id):
+        print(f"Player {player_id} succesfuly delete")
+        input("Press any button to return")
 """ 
     # Tournament Menu
     def display_tournaments_menu(self):
