@@ -151,7 +151,7 @@ class TournamentController():
             menu_choice = {
                 "1": self.create_new_tournament,
                 "2": self.create_new_tournament,
-                "3": self.create_new_tournament,
+                "3": self.update_tournament,
                 "4": self.create_new_tournament,
                 "5": self.create_new_tournament,
                 "6": self.create_new_tournament
@@ -167,6 +167,7 @@ class TournamentController():
             else :
                 MainView.error("Error : Wrong input")
 
+    #Create Tournament
     def create_new_tournament(self):
         tournament_data, str_numbers_of_players = TournamentView.get_new_tournament_inputs()
 
@@ -196,9 +197,9 @@ class TournamentController():
         except Exception as e:
             MainView.error(f"Error while saving the tournament: {e}")
 
-
     def get_players_list(self, numbers_of_players):
         player_list = []
+        numbers_of_players = int(numbers_of_players)
         for i in range(numbers_of_players):
             while True:
                 print(f"\n--- Registration Player {i + 1} / {numbers_of_players} ---")
@@ -215,8 +216,88 @@ class TournamentController():
 
         return player_list
 
+    #Update Tournament
+    def update_tournament(self):
+        #on recupere un id
+        tournament_id = TournamentView.get_id_view()
+
+        #on recupere les info du joueur via son id 
+        tournament_info = Tournament.get_tournament_by_id(tournament_id)
+
+        if not tournament_info:
+            MainView.error("Tournament not found!")
+            return
+
+        tournament_data = TournamentView.update_tournament_inputs(tournament_info)
+
+        try:
+            tournament_data['Total_round'] = int(tournament_data['Total_round'])
+        except ValueError:
+            tournament_data['Total_round'] = 4
+            return
+        
+        #Update Players 
+        actual_players_data = tournament_info["Players"]
+        players_data = self.update_tournament_players_menu(actual_players_data)
+      
+        try:
+            Tournament.update_tournament(tournament_id, tournament_data,players_data)
+            MainView.success("Tournament updated successfully!")
+        except Exception as e:
+            MainView.error(f"Error: {e}")
+
+    #Update Tournament Player List
+    def update_tournament_players_menu(self, actual_players_data):
+        while True:
+            print(f"📋 CURRENT PLAYERS LIST ({len(actual_players_data)})")
+            TournamentView.print_players_table(actual_players_data)
+            
+            response = TournamentView.display_players_update_menu()
+            
+            if response == "1": 
+                number_of_players = TournamentView.display_numbers_players("Add")
+                list_update = self.get_players_list(number_of_players)
+                actual_players_data += list_update
+                #return actual_players_data
+            
+            elif response == "2": 
+                actual_players_data = self.remove_tournament_player(actual_players_data)
+                #return actual_players_data
+            
+            elif response == "3": 
+                return actual_players_data
+                
+            else:
+                 MainView.error("Error : Wrong input")
+    
+    @classmethod
+    def remove_tournament_player(self, players_data):
+        to_delete = TournamentView.display_numbers_players("Remove")
+        to_delete = int(to_delete)
+        for number in range(to_delete):
+            while True:
+                print(f"\n--- Delete Player {number + 1} / {to_delete} ---")
+                target_id = TournamentView.get_remove_list()
+                
+                player_found = False
+                for index, p in enumerate(players_data):
+                    if p[2] == target_id:
+                        removed_player = players_data.pop(index)
+                        print(f"Joueur {removed_player[0]} {removed_player[1]} (ID: {target_id}) supprimé.")
+                        player_found = True
+                        break 
+                
+                if player_found:
+                    break 
+                else:
+                    MainView.error(f"Player {target_id} not in tournament , retry")
+                    
+        return players_data
 
 
+
+            
+  
 
 
 

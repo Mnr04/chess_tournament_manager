@@ -128,3 +128,47 @@ class TournamentView():
         print("\n--- Enter id of player you want to registred ---")
         id = input("id: ")
         return id
+
+    @staticmethod
+    def get_id_view():
+        print("\n--- Choose Tournament ---")
+        tournament_id = input("Tournament id: " )
+        return tournament_id
+
+    @staticmethod
+    def update_tournament_inputs(tournament):
+        print(f"\n--- Update Tournament {tournament['Name']} ---") 
+        
+        name = input(f"Last Name ({tournament['Name']}): ") or tournament['Name']
+        City = input(f"City ({tournament['City']}): ") or tournament['City']
+        Total_round = input(f"Age ({tournament['Total_round']}): ") or tournament['Total_round']
+        Description = input(f"INE ({tournament['Description']}): ") or tournament['Description']
+
+        return {"Name": name, "City": City, "Total_round": Total_round, "Description": Description, "Players": []}
+    
+    def display_players_update_menu():
+        print("Do you add or remove player list")
+        print(" [1] Add player 👤")
+        print(" [2] Remove Player 🏆")
+        print(" [3] NO")
+        response = input("Your Choice: ")
+        return response
+    
+
+    def display_numbers_players(action):
+        print(f"How many player you want to {action}? ")
+        numbers_of_players = input("Your choice ? : ")
+        return numbers_of_players
+    
+    @staticmethod
+    def get_remove_list():
+        print("\n--- Enter id of player you want to remove ---")
+        id = input("id: ")
+        return id
+    
+    def print_players_table(players_list):
+        if not players_list:
+            print("   🚫 No players registered yet.")
+        else:
+            headers = ["Surname", "Name", "ID"]
+            print(tabulate(players_list, headers=headers, tablefmt="simple"))
