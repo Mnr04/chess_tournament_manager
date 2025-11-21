@@ -235,14 +235,9 @@ class Round():
 
     def get_round_players_list(tournament_id):
         file_path = os.path.join("data", "tournament", tournament_id, "Ranking.json")
-        player_list = []
         with open(file_path, "r") as file:
-            ranking = json.load(file)
-            for player in ranking :
-                #ici on recupere la liste des joueurs classé selon le ranking actuelle
-                player_list.append(player["Id"])
-
-        return ranking, player_list
+            player_list_sort = json.load(file)
+        return player_list_sort
     
     def create_match_list(player_list, tournament_id, round_number):
         match_list = []
@@ -332,4 +327,4 @@ class Round():
         with open(file_path, "w") as file:
             json.dump(data, file, indent=2)
 
- 
+    

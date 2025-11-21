@@ -180,6 +180,8 @@ class TournamentView():
     def display_tournament_info(tournaments_info):
         print(f"{'Name':<12} : {tournaments_info['Name']}")
         print(f"{'City':<12} : {tournaments_info['City']}")
+        print(f"{'Start date':<12} : {tournaments_info['Start_date']}")
+        print(f"{'End date':<12} : {tournaments_info['End_date']}")
         print(f"{'Total round':<12} : {tournaments_info['Total_round']}")
         print(f"they are {len(tournaments_info['Players'])} players Registred")
         print("Players List: ")
@@ -236,12 +238,52 @@ class RoundView():
         return reponse
 
 class MatchView():
+    @staticmethod
     def display_match(match):
+        if match[1] is None:
+            print(f"⚠️  {match[0]['Name']} is exempt (Bye) and wins 1 point.")
+            return 1, 0 
+        
         player1_data = match[0] 
         player2_data = match[1]
+
+        print(f"\n--- MATCH : {player1_data['Name']} vs {player2_data['Name']} ---")
         
-        print(f"{player1_data[1]} vs {player2_data[1]}")
-        score1 = input(f"Score {player1_data[1]}: ")
-        score2 = input(f"Score {player2_data[1]}: ")
+        valid_scores = ['0', '0.5', '1']
+
+        while True:
+            score1 = input(f"Score {player1_data['Name']} (0, 0.5, 1): ")
+            if score1 in valid_scores:
+                break 
+            print("Invalid score. Please enter 0, 0.5 or 1.")
+
+        while True:
+            score2 = input(f"Score {player2_data['Name']} (0, 0.5, 1): ")
+            if score2 in valid_scores:
+                if float(score1) + float(score2) != 1:
+                     print(f"Total must be 1 (Ex: 1 vs 0, or 0.5 vs 0.5)")
+                     continue 
+                break
+            print("Invalid score.")
 
         return score1, score2
+
+class RapportView:
+    @staticmethod
+    def display_rapport_sub_menu():
+        print("\n--- 📊 REPORTS MENU ---")
+        print(" [1] List of all players 👥")
+        print(" [2] List of all tournaments 🏆")
+        print(" [3] Tournament Details (Name & Dates) 📅")
+        print(" [4] Tournament Players (Alphabetical) ♟️")
+        print(" [5] Tournament Rounds & Matches ⚔️")
+        print(" [6] Return to Main Menu ❌")
+        
+        response = input("Your choice: ")
+        return response
+    
+    def display_players_in_tournament(tournament_name, player_list):
+        print(f"Players list for {tournament_name} Tournament 🏆")
+        print(tabulate(player_list, headers="keys", tablefmt="fancy_grid"))
+        
+        input("Press any button to return")

@@ -1,4 +1,4 @@
-from view import MainView, PlayersView, TournamentView, MatchView, RoundView
+from view import MainView, PlayersView, TournamentView, MatchView, RoundView, RapportView
 from models import Player, Tournament, Round
 import datetime
 
@@ -7,6 +7,7 @@ class MainController:
         self.view = MainView()
         self.players_controller = PlayersController()
         self.tournaments_controller = TournamentController()
+        self.rapport_controller = RapportController()
   
     def run(self):
         while True:
@@ -16,7 +17,7 @@ class MainController:
             menu_choice = {
                 "1": self.players_controller.players_sub_menu,
                 "2": self.tournaments_controller.tournament_sub_menu,
-                "3": "",
+                "3": self.rapport_controller.Rapport_sub_menu,
             }
         
             if response in menu_choice:
@@ -133,8 +134,9 @@ class PlayersController():
     # view all players
     def view_all_player(self):
         #On récupère tout les joueurs 
-        all_players = Player.get_all_players()
-        self.players_view.display_all_players(all_players)
+        all_players_sorted = Player.get_all_players()
+        all_players_sorted = sorted(all_players_sorted, key=lambda x: x['surname'], reverse=False)
+        self.players_view.display_all_players(all_players_sorted)
  
     # Remove player
     def remove_player(self):
@@ -350,10 +352,12 @@ class TournamentController():
             {"Name": p[0], "Surname": p[1], "Id": p[2]} 
             for p in tournament_info["Players"]
         ]
+        player_list = sorted(player_list, key=lambda x: x['Surname'], reverse=False)
 
         tournament_info['Players'] = player_list
 
         TournamentView.display_tournament_info(tournament_info)
+        return tournament_info
 
     #Access all tournaments data
     def view_all_tournaments(self):
@@ -387,9 +391,12 @@ class TournamentController():
         actual_round = int(tournament_info["Actual_round"])
         total_round = int(tournament_info["Total_round"])
 
+        #On initialise le match_history
+        match_history = ()
+
         while actual_round != total_round:
             
-            actual_round = TournamentController.run_round(actual_round, tournament_id)
+            actual_round = TournamentController.run_round(actual_round, tournament_id, match_history)
                
             #Display pour voir si on contunue
             response = RoundView.display_continue_tournament(actual_round, total_round)
@@ -406,36 +413,114 @@ class TournamentController():
         for match in match_list:
             score1, score2 = MatchView.display_match(match)
 
-            match[0][3] = score1
-            match[1][3] = score2
+            match[0]["Match_score"] = score1
+            match[1]["Match_score"] = score2
                 
-        #on check les scores et update le ranking en fonction 
-        if float(score1) > float(score2):
-            Round.update_ranking(tournament_id, match[0][0], 1) 
-        elif float(score1) < float(score2):
-            Round.update_ranking(tournament_id, match[1][0], 1) 
-        else:
-            Round.update_ranking(tournament_id, match[0][0], 0.5)
-            Round.update_ranking(tournament_id, match[1][0], 0.5)
+            #on check les scores et update le ranking en fonction 
+            if float(score1) > float(score2):
+                Round.update_ranking(tournament_id, match[0]["Id"], 1) 
+            elif float(score1) < float(score2):
+                Round.update_ranking(tournament_id, match[1]["Id"], 1) 
+            else:
+                Round.update_ranking(tournament_id, match[0]["Id"], 0.5)
+                Round.update_ranking(tournament_id, match[1]["Id"], 0.5)
 
     def close_round(tournament_id, actual_round, match_list):
-            Round.update_match_list(tournament_id, match_list, actual_round)
-            Tournament.update_tournament_statut(tournament_id)
-            Round.end_time_round(actual_round, tournament_id)
-            MainView.success(f'Round {actual_round} Finished')
+        Round.update_match_list(tournament_id, match_list, actual_round)
+        Tournament.update_tournament_statut(tournament_id)
+        Round.end_time_round(actual_round, tournament_id)
+        MainView.success(f'Round {actual_round} Finished')
 
-    def run_round(actual_round ,tournament_id):
+    def run_round(actual_round ,tournament_id, match_history):
         actual_round += 1
         Round.create_round(actual_round, tournament_id)
         Round.start_time_round(actual_round, tournament_id)
         #on recupère la liste des joueurs
-        round_player, player_list = Round.get_round_players_list(tournament_id)
+        player_list_sort= Round.get_round_players_list(tournament_id)
         #on creer la match list
-        match_list = Round.create_match_list(round_player, tournament_id, actual_round)
-
+        match_list = TournamentController.generate_pairs(player_list_sort, match_history)
         #On Génère les matchs et met à jour le ranking
         TournamentController.process_match(match_list, tournament_id)
-
         #On Close le Round
         TournamentController.close_round(tournament_id, actual_round, match_list)
         return actual_round
+    
+    def generate_pairs(player_list_sort, match_history):
+        match_list = []
+
+        #Cas ou list players impair , on pop le dernier et on lui donne 1 point
+        if len(player_list_sort) % 2 != 0:
+            exit_player = player_list_sort.pop() 
+            match_exit = [exit_player, None] 
+            match_list.append(match_exit)
+        
+        while len(player_list_sort) > 0:
+            player1 = player_list_sort.pop(0)
+            match_found = False
+            for i in range(len(player_list_sort)):
+                possible_opponent = player_list_sort[i]
+
+                p1_id = player1['Id']
+                p2_id = possible_opponent['Id']
+                
+                if not TournamentController.has_already_played(p1_id, p2_id, match_history):
+                    player2 = player_list_sort.pop(i) 
+                    match = [player1, player2]
+                    match_list.append(match)
+                    match_found = True
+                    break 
+            
+            if match_found == False:
+                player2 = player_list_sort.pop(0)
+                match = [player1, player2]
+                match_list.append(match) 
+        return match_list
+
+    def has_already_played(p1_id, p2_id, match_history):
+        if [p1_id, p2_id] in match_history:
+            return True
+        
+        if [p2_id, p1_id] in match_history:
+            return True
+            
+        return False
+    
+class RapportController:
+    def __init__(self):
+            self.players_controller = PlayersController()
+            self.tournament_controller = TournamentController()
+            self.main_view = MainView()
+
+    def Rapport_sub_menu(self):
+        while True:
+            response = RapportView.display_rapport_sub_menu()
+
+            menu_choice = {
+                "1": self.players_controller.view_all_player,
+                "2": self.tournament_controller.view_all_tournaments,
+                "3": self.tournament_controller.view_tournament_info,
+                "4": self.tournament_player_list,
+                "5": ''
+            }
+        
+            if response in menu_choice:
+                user_choice = menu_choice[response]
+                user_choice()
+                
+            elif response == "6":
+                 break
+            
+            else :
+                self.main_view.error("Error : Wrong input")
+
+    def tournament_player_list(self):
+        tournament_id = TournamentView.get_id_view()
+        tournament_info = Tournament.get_tournament_by_id(tournament_id)
+        player_list = [
+            {"Name": p[0], "Surname": p[1], "Id": p[2]} 
+            for p in tournament_info["Players"]
+        ]
+        player_list = sorted(player_list, key=lambda x: x['Surname'], reverse=False)
+
+        tournament_info['Players'] = player_list
+        RapportView.display_players_in_tournament(tournament_info["Name"],player_list)
