@@ -97,6 +97,14 @@ class PlayersView():
             "ine": ine
         }
     
+    @staticmethod
+    def display_players_list(players_list):
+        print("\n--- Players List ---")
+        for i, player in enumerate(players_list, start=1):
+            print(f"[{i}] {player['name']} {player['surname']} ({player['ine']})")
+            
+        print("[0] Return")
+    
     #View Player
     @staticmethod
     def display_player_info(player_info):
@@ -117,8 +125,8 @@ class PlayersView():
         input("Press any button to return")
 
     #Delete View
-    def display_delete_view(cls, player_id):
-        print(f"Player {player_id} succesfuly delete")
+    def display_delete_view(cls, player_info):
+        print(f"Player {player_info["name"]} {player_info["surname"]} succesfuly delete")
         input("Press any button to return")
 
 class TournamentView():
@@ -138,21 +146,28 @@ class TournamentView():
     
     @staticmethod
     def get_new_tournament_inputs():
-    
         print("\n--- Create a new tournament ---")
         
-        name = input("Tournament Name: ")
-        city = input("City: ")
-        start_date = input("Start Date (YYYY-MM-DD): ")
-        end_date = input("End Date (YYYY-MM-DD): ")
-        total_tour_number = input("Total tour number:  (default = 4)")
-        description = input("description: ")
-        numbers_of_players = input("How many players in this Tournament ? : ")
+        name = InputView.get_valid_name("Tournament Name: ")
+        city = InputView.get_valid_name("City: ")
+        start_date = InputView.get_valid_date("Start Date (YYYY-MM-DD): ")
+        end_date = InputView.get_valid_date("End Date (YYYY-MM-DD): ")
+        total_round = InputView.get_valid_int("Total round number (default = 4): ", 4)
+        description = input("Description: ") 
+    
+        numbers_of_players = InputView.get_valid_int("How many players?: ")
 
-        return {"name": name, "city": city, "Total_tour_number":total_tour_number, "Description":description, "Start_date": start_date, "End_date" : end_date}, numbers_of_players
+        return {
+            "name": name, 
+            "city": city, 
+            "total_round": total_round,   
+            "description": description,   
+            "start_date": start_date,     
+            "end_date": end_date          
+        }, numbers_of_players
 
     @staticmethod
-    def get_players_list():
+    def get_player_id_input():
         print("\n--- Enter id of player you want to registred ---")
         id = input("id: ")
         return id
@@ -353,9 +368,17 @@ class InputView:
             print("Error: This field cannot be empty.")
 
     @staticmethod
-    def get_valid_date(prompt):
+    def get_valid_date(prompt, default=None):
         while True:
-            date_str = input(prompt)
+            date_str = input(prompt).strip()
+            
+            if not date_str:
+                if default is not None:
+                    return default 
+                
+                print("Error: This field cannot be empty.")
+                continue 
+
             try:
                 date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
                 return date_obj.isoformat()
@@ -363,19 +386,24 @@ class InputView:
                 print("Error: Invalid date format. Please use YYYY-MM-DD.")
 
     @staticmethod
-    def get_valid_int(prompt):
+    def get_valid_int(prompt, default=None):
         while True:
             value = input(prompt)
+            if not value:
+                return default
             try:
                 return int(value)
             except ValueError:
                 print("Error: Please enter a valid number.")
 
     @staticmethod
-    def get_valid_name(prompt):
+    def get_valid_name(prompt, default=None):
         while True:
             user_input = input(prompt).strip()
             if not user_input:
+                if default is not None:
+                    return default
+                
                 print("Error: This field cannot be empty.")
                 continue
             
@@ -385,9 +413,14 @@ class InputView:
                 print("Error: Name must contain only letters.")
     
     @staticmethod
-    def get_valid_int(prompt):
+    def get_valid_int(prompt, default=None):
         while True:
             user_input = input(prompt)
+            if not user_input:
+                if default is not None:
+                    return default
+                print("Error: This field cannot be empty.")
+                continue
             
             try:
                 value = int(user_input)

@@ -4,6 +4,8 @@ import random
 import datetime
 from database import JsonManager
 from pathlib import Path
+import os
+import json
 
 
 class Player():
@@ -65,55 +67,53 @@ class Player():
 
 class Tournament():
 
-    def __init__(self, name, city, total_round, players, description, start_date, end_date):
-        self.id = shortuuid.uuid()
+    def __init__(self, name, city, total_round, players, description, start_date, end_date, id=None):
+        self.id = id if id else shortuuid.uuid()
         self.name = name
         self.city = city
         self.actual_round = 0
         self.total_round = total_round
         self.players = players
         self.description = description
-        self.actual_round = 0
         self.finish = False
         self.start_date = start_date
         self.end_date = end_date
-        pass
 
-    def tournament_to_dict(self):
+    def to_dict(self):
         tournois_info = {
             "id" : self.id,
-            "Name" : self.name,
-            "City" : self.city,
-            "Start_date": self.start_date,
-            "End_date": self.end_date,
-            "Total_round": self.total_round,
-            "Players": self.players,
-            "Description": self.description,
-            "Actual_round": self.actual_round,
-            "Finish": self.finish
+            "name" : self.name,
+            "city" : self.city,
+            "start_date": self.start_date,
+            "end_date": self.end_date,
+            "total_round": self.total_round,
+            "players": self.players,
+            "description": self.description,
+            "actual_round": self.actual_round,
+            "finish": self.finish
         }
         return tournois_info
-        
-    def save_tournament(self):
-        #on recupere les donné 
-        tournament_data = self.tournament_to_dict()
-
-        file_path = Path("data") / "tournament" /self.id /"tournament_general_info.json"
-        directory_to_create = os.path.dirname(file_path)
-        os.makedirs(directory_to_create, exist_ok=True)
-
-        with open(file_path, "w") as file:
-            json.dump(tournament_data, file, indent=2)
     
+    @staticmethod
+    def get_file_path(tournament_id):
+        # Get the path for tournament general info
+        file_path = Path("data") / "tournament" /tournament_id /"tournament_general_info.json"
+        return file_path
+ 
+    def save_tournament(self):
+        # Transform Data  
+        tournament_data = self.to_dict()
+        # Save with JsonManager
+        JsonManager.save_data(self.get_file_path(tournament_data['id']), tournament_data)
+
+    @staticmethod  
     def get_tournaments_id_list():
         tournaments_list = []
-        directory = "data"
 
         path = Path("data") /  "tournament"
-        
+        # Get all the round number from folder
         try:
             for file_name in os.listdir(path):
-                #file_path = os.path.join(directory_path, file_name)
                 tournaments_list.append(file_name)
             
             return tournaments_list
@@ -124,42 +124,38 @@ class Tournament():
         
     @classmethod
     def get_tournament_by_id(cls, tournament_id):
-        file_path = Path('data') /'tournament' / tournament_id / "tournament_general_info.json"
-        with open(file_path, "r") as file:
-            tournament_data = json.load(file)
+        # Get tournament info from id 
+        return JsonManager.load_data(cls.get_file_path(tournament_id))
     
-        return tournament_data
-    
-    def get_all_tournement_info():
+    @classmethod
+    def get_all_tournement_info(cls):
         all_tournament_data = []
-
+        # Get all the tournament Id
         tournaments_name_list = Tournament.get_tournaments_id_list()
+        # For each id , load data tournament
         for id in tournaments_name_list:
-            file_path = Path('data') / 'tournament' / id / "tournament_general_info.json"
-            with open(file_path, "r") as file:
-                tournament_data = json.load(file)
-                all_tournament_data.append(tournament_data)
-
+            tournament_data = JsonManager.load_data(cls.get_file_path(id))
+            all_tournament_data.append(tournament_data)
         return all_tournament_data
 
     @classmethod
     def update_tournament(cls, tournament_id, new_tournament_data, players_data):
-       
+       # Get tournament info from his Id
        actual_tournement_data = cls.get_tournament_by_id(tournament_id)
-
+       # Update dictionnary with new value
        actual_tournement_data.update(new_tournament_data)
-       actual_tournement_data["Players"] = players_data
-              
-      
-       file_path = Path('data') / 'tournament'/ actual_tournement_data["id"] / "tournament_general_info.json"
-       with open(file_path, "w") as file:
-            json.dump(actual_tournement_data, file, indent=2)
+       # Update player list 
+       actual_tournement_data["players"] = players_data
+       # Save new data
+       JsonManager.save_data(cls.get_file_path(actual_tournement_data['id']), actual_tournement_data)
 
     @classmethod
     def delete_tournament(cls, target_id):
 
+        # Get the file 
         path = Path('data') / "tournament" / target_id
 
+        # Delete the id corresponding file
         if os.path.isdir(path):
             shutil.rmtree(path)
             return True
@@ -167,37 +163,37 @@ class Tournament():
             return False
 
     @classmethod     
-    def update_tournament_statut(cls , tournament_id):
+    def update_tournament_actual_round(cls , tournament_id):
+        # Get tournament info from id
         tournament_to_start = cls.get_tournament_by_id(tournament_id)
-        tournament_to_start["Actual_round"] += 1
-        file_path = Path('data')/'tournament'/tournament_to_start["id"] / "tournament_general_info.json"
-        with open(file_path, "w") as file:
-            json.dump(tournament_to_start, file, indent=2)
+        # Update tournament actual round
+        tournament_to_start["actual_round"] += 1
+        # Save new data
+        JsonManager.save_data(cls.get_file_path(tournament_to_start['id']), tournament_to_start)
 
     @staticmethod
-    def start_tournament(tournament_id):
-        file_path = Path("data") /"tournament"/ tournament_id/ "tournament_general_info.json"
+    def initialize_standings(tournament_id):
+        
+        file_path = Path("data") /"tournament"/ tournament_id/ "standings.json"
         if os.path.exists(file_path):
-            pass
-        else : 
-            directory_to_create = os.path.dirname(file_path)
-            os.makedirs(directory_to_create, exist_ok=True)
-            tournament_data = Tournament.get_tournament_by_id(tournament_id)
-            player_list = [
-                {"Name": p[0], "Surname": p[1], "Id": p[2], "Score": 0} 
-                for p in tournament_data["Players"]
+            return
+        # Get tournament info from id
+        tournament_data = Tournament.get_tournament_by_id(tournament_id)
+        # Create players list from tournament_data
+        player_list = [
+            {"name": p[0], "surname": p[1], "id": p[2], "score": 0} 
+            for p in tournament_data["players"]
             ]
-            random.shuffle(player_list)
-            with open(file_path, "w") as file:
-                json.dump(player_list, file, indent=2)
+        # Shuffle player list
+        random.shuffle(player_list)
+        JsonManager.save_data(file_path, player_list)
 
     @classmethod
     def finish_tournament(cls , tournament_id):
         tournament_to_finish = cls.get_tournament_by_id(tournament_id)
-        tournament_to_finish["Finish"] = True
-        file_path = os.path.join('data', 'tournament', tournament_to_finish["id"], "info.json")
-        with open(file_path, "w") as file:
-            json.dump(tournament_to_finish, file, indent=2)
+        # Update finish attribute
+        tournament_to_finish["finish"] = True
+        JsonManager.save_data(cls.get_file_path(tournament_to_finish['id']), tournament_to_finish)
 
 class Round():
     @classmethod
