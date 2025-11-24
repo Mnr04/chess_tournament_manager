@@ -36,7 +36,6 @@ class PlayersController():
         self.players_view = PlayersView()
         self.main_view = MainView()
 
-    # Sub player menu
     def players_sub_menu(self):
         while True:
             response = self.players_view.display_players_sub_menu()
@@ -59,8 +58,7 @@ class PlayersController():
             else :
                 self.main_view.error("Error : Wrong input")
     
-    # Create
-    def create_new_player(self):
+    def create_player(self):
         player_data = self.players_view.get_new_player_inputs()
         
         name = player_data["name"]
@@ -109,7 +107,6 @@ class PlayersController():
             else:
                 MainView.error(f"Error: Please choose a number between 1 and {number_of_players}")
          
-    # Update
     def update_player(self):
             target_player = self.select_player()
 
@@ -121,7 +118,6 @@ class PlayersController():
             
             self.main_view.success("Player updated successfully!")
             
-    # View
     def view_player(self):
         target_player = self.select_player()
 
@@ -138,7 +134,6 @@ class PlayersController():
         # Display player data
         self.players_view.display_player_info(player_info)
 
-    # view all 
     def view_all_player(self):
         # Get all players from Model --> Database
         all_players_sorted = Player.get_all_players()
@@ -147,7 +142,6 @@ class PlayersController():
         # Display all players infos
         self.players_view.display_all_players(all_players_sorted)
  
-    # Remove player
     def remove_player(self):
         target_player = self.select_player()
 
@@ -190,10 +184,9 @@ class TournamentController():
             else :
                 MainView.error("Error : Wrong input")
 
-    #Create Tournament
-    def create_new_tournament(self):
+    def create_tournament(self):
         # Get tournament data and number of players in view
-        tournament_data, number_of_players = TournamentView.get_new_tournament_inputs()
+        tournament_data, number_of_players = TournamentView.get_tournament_inputs()
 
         # Verify date is ok
         if tournament_data["start_date"] > tournament_data["end_date"]:
@@ -215,33 +208,85 @@ class TournamentController():
         except Exception as e:
             MainView.error(f"Error while saving: {e}")
 
-    # Get players for tournament
-    def get_players_list(self, number_of_players):
-        registered_players = []
+    def update_tournament(self):
+        # Select a tournament 
+        target_tournament = TournamentController.select_tournament(filter_condition=lambda t: t['actual_round'] == 0)
         
-        for i in range(number_of_players):
+        if not target_tournament:
+                return
+        
+        update_info = TournamentView.update_tournament_inputs(target_tournament)
+        if update_info["start_date"] > update_info["end_date"]:
+            MainView.error("Invalid date")
+            return
+        
+        #Update Players 
+        actual_players_data = target_tournament["players"]
+        players_data = self.manage_tournament_players(actual_players_data)
+
+        try:
+            Tournament.update_tournament(target_tournament["id"], update_info ,players_data)
+            MainView.success("Tournament updated successfully!")
+        except Exception as e:
+            MainView.error(f"Error: {e}")
+    
+    def view_tournament(self):
+
+        target_tournament = TournamentController.select_tournament()
+        if not target_tournament:
+            MainView.error("No Tournament!")
+            return
+        
+        player_list = sorted(target_tournament['players'], key=lambda x: x[1], reverse=False)
+        target_tournament['players'] = player_list
+        
+     
+        TournamentView.display_tournament_info(target_tournament)
+        return target_tournament
+       
+    def view_all_tournaments(self):
+        all_tournaments = Tournament.get_all_tournement()
+        TournamentView.display_all_tournament(all_tournaments)
+
+    def remove_tournament(self):
+        tournament_target = TournamentController.select_tournament()
+        if not tournament_target:
+            MainView.error("Tournament not find")
+        
+        TournamentView.display_delete_view(tournament_target["id"])     
+        Tournament.delete_tournament(tournament_target["id"])
+
+    def get_players_list(self, number_of_players, actual_players_data=None):
+        registered_players = []
+
+        already_registered = []
+        if actual_players_data:
+            already_registered = [p[2] for p in actual_players_data]
+        
+        for i in range(int(number_of_players)):
             while True:
                 print(f"\n--- Player {i + 1} / {number_of_players} ---")
                 
-                # Get player data
                 selected_player = PlayersController.select_player()
-                
-                # Case when you don't choose player
+
                 if selected_player is None:
                     print("You must select a player.")
                     continue
-                
-                # Case where you have two same player
-                already_registered = False
+      
+                if selected_player['id'] in already_registered:
+                    MainView.error("Player already registered in this tournament.")
+                    continue 
+
+                is_duplicate = False
                 for p in registered_players:
-                    #p[2] is id
                     if p[2] == selected_player['id']:
-                        already_registered = True
-                        break
-                
-                if already_registered:
-                    MainView.error(f"{selected_player['name']} is already registered in this tournament!")
-                    continue
+                        is_duplicate = True
+                        break 
+      
+                if is_duplicate:
+                    MainView.error(f"{selected_player['surname']} is already selected in this list!")
+                    continue 
+
 
                 registered_players.append([
                     selected_player['surname'], 
@@ -249,78 +294,54 @@ class TournamentController():
                     selected_player['id']
                 ])
                 MainView.success(f"Player {selected_player['surname']} added!")
-                break
+                break 
                     
         return registered_players
 
-    #Update Tournament
-    #If Not Start
-    def update_tournament(self):
-        #on recupere un id
-        tournament_id = TournamentView.get_id_view()
+    @classmethod
+    def select_tournament(cls, filter_condition=None):
+        all_tournaments = Tournament.get_all_tournement()
 
-        #on recupere les info du joueur via son id
-        try :  
-            tournament_info = Tournament.get_tournament_by_id(tournament_id)
+        if filter_condition:
+            tournaments_to_display = [t for t in all_tournaments if filter_condition(t)]
+        else:
+            tournaments_to_display = all_tournaments
 
-        except :
-            MainView.error("Tournament not found!")
-            return
+        number_of_tournaments = len(tournaments_to_display)
 
-        #On recupere les nouveaux inputs
-        tournament_data = TournamentView.update_tournament_inputs(tournament_info)
-
-        try:
-            tournament_data['Total_round'] = int(tournament_data['Total_round'])
-        except ValueError:
-            tournament_data['Total_round'] = 4
-            return
+        if number_of_tournaments == 0:
+            MainView.error("No tournament to display.")
+            return None
         
-        #Date verification
-        try : 
-            tournament_data["Start_date"] = datetime.datetime.strptime(tournament_data["Start_date"], "%Y-%m-%d").date()
-            tournament_data["End_date"] = datetime.datetime.strptime(tournament_data["End_date"], "%Y-%m-%d").date()
-
-        except ValueError:
-            MainView.error("Invalid date format")
-            return
-
-        if tournament_data["Start_date"] > tournament_data["End_date"]:
-            MainView.error("Invalid date format")
-            return
-            
-        #clean the date
-        tournament_data["Start_date"] = tournament_data["Start_date"].isoformat()
-        tournament_data["End_date"] = tournament_data["End_date"].isoformat()
-
+        TournamentView.display_tournament_list(tournaments_to_display)
         
-        #Update Players 
-        actual_players_data = tournament_info["Players"]
-        players_data = self.update_tournament_players_menu(actual_players_data)
-      
-        try:
-            Tournament.update_tournament(tournament_id, tournament_data,players_data)
-            MainView.success("Tournament updated successfully!")
-        except Exception as e:
-            MainView.error(f"Error: {e}")
+        print(f"\nSelect a tournament (1 - {number_of_tournaments})")
+        user_choice = InputView.get_valid_int("Your choice (0 to cancel): ")
 
-    #Update Tournament Player List
-    def update_tournament_players_menu(self, actual_players_data):
+        if user_choice == 0:
+            return None
+
+        if 1 <= user_choice <= number_of_tournaments:
+            index = user_choice - 1
+            return tournaments_to_display[index]
+        else:
+            MainView.error(f"Error: Please choose a number between 1 and {number_of_tournaments}")
+            return None
+         
+    def manage_tournament_players(self, actual_players_data):
         while True:
-            print(f"📋 CURRENT PLAYERS LIST ({len(actual_players_data)})")
+            print(f"\n CURRENT PLAYERS LIST ({len(actual_players_data)})")
             TournamentView.print_players_table(actual_players_data)
             
             response = TournamentView.display_players_update_menu()
             
             if response == "1": 
                 number_of_players = TournamentView.display_numbers_players("Add")
-                list_update = self.get_players_list(number_of_players)
+                list_update = self.get_players_list(number_of_players, actual_players_data=actual_players_data)
                 actual_players_data += list_update
-                #return actual_players_data
             
             elif response == "2": 
                 actual_players_data = self.remove_tournament_player(actual_players_data)
-                #return actual_players_data
             
             elif response == "3": 
                 return actual_players_data
@@ -330,69 +351,31 @@ class TournamentController():
     
     @classmethod
     def remove_tournament_player(self, players_data):
-        to_delete = TournamentView.display_numbers_players("Remove")
-        to_delete = int(to_delete)
-        for number in range(to_delete):
-            while True:
-                print(f"\n--- Delete Player {number + 1} / {to_delete} ---")
-                target_id = TournamentView.get_remove_list()
-                
-                player_found = False
-                for index, p in enumerate(players_data):
-                    if p[2] == target_id:
-                        removed_player = players_data.pop(index)
-                        print(f"Joueur {removed_player[0]} {removed_player[1]} (ID: {target_id}) supprimé.")
-                        player_found = True
-                        break 
-                
-                if player_found:
-                    break 
-                else:
-                    MainView.error(f"Player {target_id} not in tournament , retry")
-                    
+        to_delete = InputView.get_valid_int("How many players to remove? ")
+
+        for i in range(to_delete):
+            if not players_data:
+                MainView.error("List is empty.")
+                break
+
+            user_choice = TournamentView.get_player_to_delete(players_data)
+
+            if user_choice == 0:
+                break 
+
+            index = user_choice - 1 
+
+            if 0 <= index < len(players_data):
+                removed = players_data.pop(index)
+                MainView.success(f"Player {removed[0]} deleted.")
+            else:
+                MainView.error("Invalid number.")
+
         return players_data
 
-    #Access one tournament data
-    def view_tournament_info(self):
-        tournament_id = TournamentView.get_id_view()
-        tournament_info = Tournament.get_tournament_by_id(tournament_id)
-
-        if not tournament_info:
-            MainView.error("Tournament not found!")
-            return
-        
-        player_list = [
-            {"Name": p[0], "Surname": p[1], "Id": p[2]} 
-            for p in tournament_info["Players"]
-        ]
-        player_list = sorted(player_list, key=lambda x: x['Surname'], reverse=False)
-
-        tournament_info['Players'] = player_list
-
-        TournamentView.display_tournament_info(tournament_info)
-        return tournament_info
-
-    #Access all tournaments data
-    def view_all_tournaments(self):
-        #On récupère tout les joueurs 
-        all_tournaments = Tournament.get_all_tournement_info()
-        TournamentView.display_all_tournament(all_tournaments)
-
-    #Remove Tournaments
-    def remove_tournaments(self):
-        #recupere player with id
-        tournament_id = TournamentView.get_id_view()
-        #creer option dans le model qui va supprimer ce joueur de la base de données
-        response = Tournament.delete_tournament(tournament_id)
-        if response == False:
-            MainView.error("Tournament not find")
-        else:
-            TournamentView.display_delete_view(tournament_id)     
-  
-    #Start Tournament
     def launch_tournament(self):
         tournament_not_finish = [t for t in Tournament.get_all_tournement_info() if t['Finish'] == False]
-        tournament_id = TournamentView.display_start_tournament(tournament_not_finish)
+        tournament_id = TournamentView.display_tournament_list(tournament_not_finish)
         
         #On active le compteur des rounds pour le tournois
         Tournament.start_tournament(tournament_id)

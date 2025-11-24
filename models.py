@@ -7,7 +7,6 @@ from pathlib import Path
 import os
 import json
 
-
 class Player():
 
     DB_FILE = Path("data") / "players_infos.json"
@@ -128,7 +127,7 @@ class Tournament():
         return JsonManager.load_data(cls.get_file_path(tournament_id))
     
     @classmethod
-    def get_all_tournement_info(cls):
+    def get_all_tournement(cls):
         all_tournament_data = []
         # Get all the tournament Id
         tournaments_name_list = Tournament.get_tournaments_id_list()
