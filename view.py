@@ -73,26 +73,26 @@ class PlayersView():
     
     @staticmethod
     def update_player_inputs(player):
-        print(f"\n--- Update Player {player['name']} {player['surname']} ---") 
+        print(f"\n--- Update Player {player.name} {player.surname} ---") 
         
         surname = InputView.get_valid_name(
-            f"Last Name ({player['surname']}): ", 
-            default=player['surname']
+            f"Last Name ({player.surname}): ", 
+            default=player.surname
         )
         
         name = InputView.get_valid_name(
-            f"First Name ({player['name']}): ", 
-            default=player['name']
+            f"First Name ({player.name}): ", 
+            default=player.name
         )
         
         birth_date = InputView.get_valid_date(
-            f"Birth Date ({player['birth_date']}): ", 
-            default=player['birth_date']
+            f"Birth Date ({player.birth_date}): ", 
+            default=player.birth_date
         )
         
         ine = InputView.get_valid_int(
-            f"INE ({player['ine']}): ", 
-            default=player['ine']
+            f"INE ({player.ine}): ", 
+            default=player.ine
         )
 
         return {
@@ -106,18 +106,18 @@ class PlayersView():
     def display_players_list(players_list):
         print("\n--- Players List ---")
         for i, player in enumerate(players_list, start=1):
-            print(f"[{i}] {player['name']} {player['surname']} ({player['ine']})")
+            print(f"[{i}] {player.name} {player.surname} ({player.ine})")
             
         print("[0] Return")
     
     #View Player
     @staticmethod
     def display_player_info(player_info):
-        print(f"Id : {player_info['id']}")
-        print(f"Name : {player_info['name']}")
-        print(f"Surname : {player_info['surname']}")
-        print(f"birth date : {player_info['birth_date']}")
-        print(f"Ine : {player_info['ine']}")
+        print(f"Id : {player_info.id}")
+        print(f"Name : {player_info.name}")
+        print(f"Surname : {player_info.surname}")
+        print(f"birth date : {player_info.birth_date}")
+        print(f"Ine : {player_info.ine}")
         
         response = input("Press any button to return")
         return response
@@ -125,13 +125,15 @@ class PlayersView():
     #View all Players
     @staticmethod
     def display_all_players(all_players):
+        # Transform player objects in dictonnary
+        table_data = [player.to_dict() for player in all_players]
         print(tabulate(all_players, headers="keys", tablefmt="fancy_grid"))
-        
+    
         input("Press any button to return")
 
     #Delete View
     def display_delete_view(cls, player_info):
-        print(f"Player {player_info["name"]} {player_info["surname"]} succesfuly delete")
+        print(f"Player {player_info.name} {player_info.surname} succesfuly delete")
         input("Press any button to return")
 
 class TournamentView():
@@ -265,11 +267,11 @@ class TournamentView():
     def display_all_tournament(all_tournaments):
         table_data = [
             {
-                "ID": data.get("id"), 
-                "Name": data.get("Name"), 
-                "City": data.get("City"),
-                "Players": len(data.get("Players")), 
-                "Description": data.get("Description", "")[0:15] 
+                "id": data.get("id"), 
+                "name": data.get("name"), 
+                "city": data.get("city"),
+                "players": len(data.get("players")), 
+                "description": data.get("description", "")[0:15] 
             } for data in all_tournaments
         ]
             
@@ -312,24 +314,24 @@ class MatchView():
     @staticmethod
     def display_match(match):
         if match[1] is None:
-            print(f"{match[0]['Name']} is exempt and wins 1 point.")
+            print(f"{match[0]['name']} is exempt and wins 1 point.")
             return 1, 0 
         
         player1_data = match[0] 
         player2_data = match[1]
 
-        print(f"\n--- MATCH : {player1_data['Name']} vs {player2_data['Name']} ---")
+        print(f"\n--- MATCH : {player1_data['name']} vs {player2_data['name']} ---")
         
         valid_scores = ['0', '0.5', '1']
 
         while True:
-            score1 = input(f"Score {player1_data['Name']} (0, 0.5, 1): ")
+            score1 = input(f"Score {player1_data['name']} (0, 0.5, 1): ")
             if score1 in valid_scores:
                 break 
             print("Invalid score. Please enter 0, 0.5 or 1.")
 
         while True:
-            score2 = input(f"Score {player2_data['Name']} (0, 0.5, 1): ")
+            score2 = input(f"Score {player2_data['name']} (0, 0.5, 1): ")
             if score2 in valid_scores:
                 if float(score1) + float(score2) != 1:
                      print(f"Total must be 1 (Ex: 1 vs 0, or 0.5 vs 0.5)")
@@ -371,16 +373,16 @@ class RapportView:
             table_data = []
 
             for match in match_list:
-                p1_score = match[0]["Match_score"]
-                p1_name = f"{match[0]['Name']} {match[0]['Surname']}"
+                p1_score = match[0]["match_score"]
+                p1_name = f"{match[0]['name']} {match[0]['surname']}"
             
                 if match[1] is None: 
                     p2_name = "Exempté"
                     p2_score = "0"
                     p1_score = "1" 
                 else:
-                    p2_score = match[1]["Match_score"]
-                    p2_name = f"{match[1]['Name']} {match[1]['Surname']}"
+                    p2_score = match[1]["match_score"]
+                    p2_name = f"{match[1]['name']} {match[1]['surname']}"
 
                 row = [p1_name, p1_score, "VS", p2_score, p2_name]
                 table_data.append(row)
@@ -442,22 +444,3 @@ class InputView:
             else:
                 print("Error: Name must contain only letters.")
     
-    @staticmethod
-    def get_valid_int(prompt, default=None):
-        while True:
-            user_input = input(prompt)
-            if not user_input:
-                if default is not None:
-                    return default
-                print("Error: This field cannot be empty.")
-                continue
-            
-            try:
-                value = int(user_input)
-                if value >= 0: 
-                    return value
-                else:
-                    print("Error: The number must be positive.")
-                    
-            except ValueError:
-                print("Error: Please enter a valid number.")

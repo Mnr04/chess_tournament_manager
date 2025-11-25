@@ -1,6 +1,5 @@
 from view import MainView, PlayersView, TournamentView, MatchView, RoundView, RapportView, InputView
 from models import Player, Tournament, Round
-import datetime
 
 class MainController:
     def __init__(self):
@@ -41,7 +40,7 @@ class PlayersController():
             response = self.players_view.display_players_sub_menu()
 
             menu_choice = {
-                "1": self.create_new_player,
+                "1": self.create_player,
                 "2": self.update_player,
                 "3": self.view_player,
                 "4": self.view_all_player,
@@ -67,7 +66,7 @@ class PlayersController():
         ine = player_data["ine"]
 
         try:
-            new_player = Player(surname, name, birth_date, ine)
+            new_player = Player(**player_data)
             new_player.save_new_player()
             self.main_view.success(f"Player {name} {surname} saved successfully!")
             
@@ -114,7 +113,7 @@ class PlayersController():
                 return
 
             updated_data = self.players_view.update_player_inputs(target_player)
-            Player.update_players(target_player['id'], updated_data)
+            Player.update_players(target_player.id, updated_data)
             
             self.main_view.success("Player updated successfully!")
             
@@ -125,7 +124,7 @@ class PlayersController():
             return
         
         # Get info from model -->  database
-        player_info = Player.get_players_by_id(target_player['id'])
+        player_info = Player.get_players_by_id(target_player.id)
         # Case where player doesn't exist
         if not player_info:
             self.main_view.error("Player not found!")
@@ -138,7 +137,7 @@ class PlayersController():
         # Get all players from Model --> Database
         all_players_sorted = Player.get_all_players()
         # Sort player by surname
-        all_players_sorted = sorted(all_players_sorted, key=lambda x: x['surname'], reverse=False)
+        all_players_sorted = sorted(all_players_sorted, key=lambda x: x.surname, reverse=False)
         # Display all players infos
         self.players_view.display_all_players(all_players_sorted)
  
@@ -149,7 +148,7 @@ class PlayersController():
             return
 
         # Get info from model -->  database
-        player_info = Player.get_players_by_id(target_player["id"])
+        player_info = Player.get_players_by_id(target_player.id)
 
         # Case where player doesn't exist
         if not player_info:
@@ -157,7 +156,7 @@ class PlayersController():
             return
         else :
             # remove player from database 
-            Player.delete_player(player_info["id"])
+            Player.delete_player(player_info.id)
             # Print message 
             self.players_view.display_delete_view(player_info)
     
@@ -166,12 +165,12 @@ class TournamentController():
         while True:
             response = TournamentView.display_tournaments_sub_menu()
             menu_choice = {
-                "1": self.create_new_tournament,
+                "1": self.create_tournament,
                 "2": self.launch_tournament,
                 "3": self.update_tournament,
-                "4": self.view_tournament_info,
+                "4": self.view_tournament,
                 "5": self.view_all_tournaments,
-                "6": self.remove_tournaments,
+                "6": self.remove_tournament,
             }
         
             if response in menu_choice:
@@ -374,37 +373,32 @@ class TournamentController():
         return players_data
 
     def launch_tournament(self):
-        tournament_not_finish = [t for t in Tournament.get_all_tournement_info() if t['Finish'] == False]
-        tournament_id = TournamentView.display_tournament_list(tournament_not_finish)
-        
-        #On active le compteur des rounds pour le tournois
-        Tournament.start_tournament(tournament_id)
-        
-        #On recupère les infos du tournois
-        tournament_info = Tournament.get_tournament_by_id(tournament_id)
+        #Select tournament to launch
+        select_tournament = TournamentController.select_tournament(filter_condition=lambda x: x['finish'] == False)
+        # Initialise standings 
+        Tournament.initialize_standings(select_tournament['id'])
+        # Get actual tournament status 
+        actual_round = int(select_tournament["actual_round"])
+        total_round = int(select_tournament["total_round"])
 
-        #on récupère le statut actuel du tournois
-        actual_round = int(tournament_info["Actual_round"])
-        total_round = int(tournament_info["Total_round"])
-
-        #On initialise le match_history
+        #initialise match_history
         match_history = ()
-
         while actual_round != total_round:
             
-            actual_round = RoundController.run_round(actual_round, tournament_id, match_history)
+            actual_round = RoundController.run_round(actual_round, select_tournament['id'], match_history)
                
-            #Display pour voir si on contunue
+            #Display to check if we continue
             response = RoundView.display_continue_tournament(actual_round, total_round)
 
             if response == '2':
                 break
 
             if actual_round == total_round:
-                Tournament.finish_tournament(tournament_id)
+                Tournament.finish_tournament(select_tournament['id'])
                 MainView.success('Tournament Finished')
                 break
-        
+            
+      
     def has_already_played(p1_id, p2_id, match_history):
         if [p1_id, p2_id] in match_history:
             return True
@@ -417,7 +411,6 @@ class TournamentController():
 class RoundController:
     def close_round(tournament_id, actual_round, match_list):
         Round.update_match_list(tournament_id, match_list, actual_round)
-        Tournament.update_tournament_statut(tournament_id)
         Round.end_time_round(actual_round, tournament_id)
         MainView.success(f'Round {actual_round} Finished')
 
@@ -429,7 +422,7 @@ class RoundController:
         # Get Player List
         player_list_sort= Round.get_round_players_list(tournament_id)
         #Create match
-        match_list = RoundController.generate_pairs(player_list_sort, match_history)
+        match_list = RoundController.generate_pairs(player_list_sort, tournament_id)
         print(match_list)
         # Match Processing
         MatchController.process_match(match_list, tournament_id)
@@ -437,8 +430,10 @@ class RoundController:
         cls.close_round(tournament_id, actual_round, match_list)
         return actual_round
 
-    def generate_pairs(player_list_sort, match_history):
+    def generate_pairs(player_list_sort, tournament_id):
         match_list = []
+
+        match_history = Round.get_all_pairs_played(tournament_id)
 
         if len(player_list_sort) % 2 != 0:
             exit_player = player_list_sort.pop() 
@@ -448,11 +443,12 @@ class RoundController:
         while len(player_list_sort) > 0:
             player1 = player_list_sort.pop(0)
             match_found = False
+
             for i in range(len(player_list_sort)):
                 possible_opponent = player_list_sort[i]
 
-                p1_id = player1['Id']
-                p2_id = possible_opponent['Id']
+                p1_id = player1['id']
+                p2_id = possible_opponent['id']
                 
                 if not TournamentController.has_already_played(p1_id, p2_id, match_history):
                     player2 = player_list_sort.pop(i) 
@@ -481,14 +477,14 @@ class MatchController:
                 match[0]["Match_score"] = score1
                 match[1]["Match_score"] = score2
             
-            #on check les scores et update le ranking en fonction 
+            # Analyse score and update standings
             if float(score1) > float(score2):
-                Round.update_ranking(tournament_id, match[0]["Id"], 1) 
+                Round.update_standing(tournament_id, match[0]["Id"], 1) 
             elif float(score1) < float(score2):
-                Round.update_ranking(tournament_id, match[1]["Id"], 1) 
+                Round.update_standing(tournament_id, match[1]["Id"], 1) 
             else:
-                Round.update_ranking(tournament_id, match[0]["Id"], 0.5)
-                Round.update_ranking(tournament_id, match[1]["Id"], 0.5)
+                Round.update_standing(tournament_id, match[0]["Id"], 0.5)
+                Round.update_standing(tournament_id, match[1]["Id"], 0.5)
     
 class RapportController:
     def __init__(self):
@@ -503,7 +499,7 @@ class RapportController:
             menu_choice = {
                 "1": self.players_controller.view_all_player,
                 "2": self.tournament_controller.view_all_tournaments,
-                "3": self.tournament_controller.view_tournament_info,
+                "3": self.tournament_controller.view_tournament,
                 "4": self.tournament_player_list,
                 "5": self.tournament_summary
             }
@@ -522,13 +518,13 @@ class RapportController:
         tournament_id = TournamentView.get_id_view()
         tournament_info = Tournament.get_tournament_by_id(tournament_id)
         player_list = [
-            {"Name": p[0], "Surname": p[1], "Id": p[2]} 
-            for p in tournament_info["Players"]
+            {"name": p[0], "surname": p[1], "id": p[2]} 
+            for p in tournament_info["players"]
         ]
-        player_list = sorted(player_list, key=lambda x: x['Surname'], reverse=False)
+        player_list = sorted(player_list, key=lambda x: x['surname'], reverse=False)
 
         tournament_info['Players'] = player_list
-        RapportView.display_players_in_tournament(tournament_info["Name"],player_list)
+        RapportView.display_players_in_tournament(tournament_info["name"],player_list)
 
     def tournament_summary(self):
         tournament_id = TournamentView.get_id_view()
