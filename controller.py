@@ -59,17 +59,25 @@ class PlayersController():
                 self.main_view.error("Error : Wrong input")
     
     def create_player(self):
-        player_data = self.players_view.get_new_player_inputs()
-        
-        name = player_data["name"]
-        surname = player_data["surname"]
-        birth_date = player_data["birth_date"] 
-        ine = player_data["ine"]
+        while True:
+            player_data = self.players_view.get_new_player_inputs()
+            
+            ine_input = player_data["ine"]
+
+            player_exist = Player.get_player_by_ine(ine_input)
+
+            if player_exist:
+                self.main_view.error(f"Error: Duplicate INE {ine_input} found.")
+                self.main_view.error("Please re-start.")
+                continue 
+            
+            else:
+                break
 
         try:
             new_player = Player(**player_data)
             new_player.save_new_player()
-            self.main_view.success(f"Player {name} {surname} saved successfully!")
+            self.main_view.success(f"✅ Player {player_data['name']} {player_data['surname']} saved successfully!")
             
         except Exception as e:
             self.main_view.error(f"Technical error while saving: {e}")
@@ -108,15 +116,28 @@ class PlayersController():
                 MainView.error(f"Error: Please choose a number between 1 and {number_of_players}")
          
     def update_player(self):
-            target_player = self.select_player()
+        target_player = self.select_player()
 
-            if not target_player:
-                return
+        if not target_player:
+            return
 
+        while True:
             updated_data = self.players_view.update_player_inputs(target_player)
-            Player.update_players(target_player.id, updated_data)
             
-            self.main_view.success("Player updated successfully!")
+            new_ine = updated_data["ine"]
+            
+            existing_player_with_ine = Player.get_player_by_ine(new_ine)
+
+            if existing_player_with_ine and existing_player_with_ine.id != target_player.id:
+                self.main_view.error(f"Error: INE  is already taken.")
+                self.main_view.error("Restarting update...")
+                continue 
+            
+            else:
+                break 
+
+        Player.update_players(target_player.id, updated_data)
+        self.main_view.success(" Player updated successfully!")
             
     def view_player(self):
         target_player = self.select_player()
@@ -160,7 +181,7 @@ class PlayersController():
             Player.delete_player(player_info.id)
             # Print message 
             self.players_view.display_delete_view(player_info)
-    
+   
 class TournamentController():
     def tournament_sub_menu(self):
         while True:
@@ -371,36 +392,26 @@ class TournamentController():
         return players_data
 
     def launch_tournament(self):
-        #Select tournament to launch
+        # Select Tournament objects
         tournament = TournamentController.select_tournament(filter_condition=lambda x: x.finish == False)
-        # Initialise standings 
+        if not tournament:
+            return
+
         Tournament.initialize_standings(tournament.id)
         
-        # Get actual tournament status 
-        actual_round = int(tournament.actual_round)
-        total_round = int(tournament.total_round)
-        
-        #initialise match_history
-        match_history = ()
-        while actual_round != total_round:
-            #on lance un nouveau round
-            RoundController.run_round(tournament, match_history)
-            #Create new round object
-
-        """     
-            actual_round = RoundController.run_round(actual_round, select_tournament['id'], match_history)
-               
-            #Display to check if we continue
-            response = RoundView.display_continue_tournament(actual_round, total_round)
-
+        while tournament.actual_round < tournament.total_round:
+            
+            RoundController.run_round(tournament)
+            
+            response = RoundView.display_continue_tournament(tournament.actual_round, tournament.total_round)
             if response == '2':
                 break
 
-            if actual_round == total_round:
-                Tournament.finish_tournament(select_tournament['id'])
-                MainView.success('Tournament Finished')
-                break
-        """    
+        if tournament.actual_round == tournament.total_round:
+            Tournament.finish_tournament(tournament.id)
+            MainView.success('Tournament Finished')
+
+    @staticmethod
     def has_already_played(p1_id, p2_id, match_history):
         if [p1_id, p2_id] in match_history:
             return True
@@ -411,29 +422,40 @@ class TournamentController():
         return False
 
 class RoundController:
-    def close_round(tournament_id, actual_round, match_list):
-        Round.update_match_list(tournament_id, match_list, actual_round)
-        Round.end_time_round(actual_round, tournament_id)
-        MainView.success(f'Round {actual_round} Finished')
 
     @classmethod
-    def run_round(cls, tournament, match_history):
+    def run_round(cls, tournament):
+        # Create round count + Round Object
         tournament.actual_round += 1
         start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+
         new_round = Round(f"Round {tournament.actual_round}", start_time)
 
-        # Get Player List
+        # Get Player + match history
         players_list = Round.get_round_players_list(tournament.id)
-        # Sort players by score
         players_list_sorted = sorted(players_list, key=lambda p: p.score, reverse=True)
-        # Generate Pairs
-        match_list = cls.generate_pairs(players_list_sorted, tournament.id)
-        new_round.match = match_list
-        # Creer match objects
-        # Process Match 
-        # Close Round
+        match_history = Round.get_all_pairs_played(tournament.id)
 
-      
+        # Generate Pairs
+        new_round.matches = cls.generate_pairs(players_list_sorted, match_history)
+
+        # Create round file
+        new_round.save_round(tournament.id)
+        
+        # Process Match and verify if finish
+        round_finished = MatchController.process_match(new_round.matches, tournament.id)
+
+        if not round_finished:
+            print("Round not finish")
+            tournament.actual_round -= 1
+            return
+        
+        #end time
+        new_round.end_time  = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        new_round.save_round(tournament.id)
+
+        # Save the Round
+        tournament.save_tournament()
 
     @staticmethod
     def generate_pairs(players_list_sorted, match_history):
@@ -467,27 +489,48 @@ class RoundController:
         return match_list
 
 class MatchController:
-    def process_match(match_list, tournament_id):
-        for match in match_list:
-            score1, score2 = MatchView.display_match(match)
+    def process_match(match_list_objects, tournament_id):
+        #create temporary list if round not finish
+        score_list = []
 
-            #Case with 1 player exempt
-            if match[1] == None :
-                match[0]["Match_score"] = score1
-                pass
+        try:
+            for match in match_list_objects:
+                
+                if match.player2 is None:
+                    score_list.append({"match": match, "p1": 1, "p2": 0})
+                    continue 
 
-            else : 
-                match[0]["Match_score"] = score1
-                match[1]["Match_score"] = score2
+                match_data = [match.player1.to_dict(), match.player2.to_dict()]
+                score1, score2 = MatchView.display_match(match_data) 
+
+                match.score1 = float(score1)
+                match.score2 = float(score2)
+
+                score_list.append({"match": match, "p1": match.score1, "p2": match.score2})
+
+        except (KeyboardInterrupt, Exception): 
+            print("\n Error ")
+            return False
+
+        print("All match are finished")
+        
+        for item in score_list:
+            m = item["match"]
+            score1 = item["p1"]
+            score2 = item["p2"]
             
-            # Analyse score and update standings
-            if float(score1) > float(score2):
-                Round.update_standing(tournament_id, match[0]["Id"], 1) 
-            elif float(score1) < float(score2):
-                Round.update_standing(tournament_id, match[1]["Id"], 1) 
+            if m.player2:
+                if score1 > score2:
+                    Round.update_standing(tournament_id, m.player1.id, 1) 
+                elif score1 < score2:
+                    Round.update_standing(tournament_id, m.player2.id, 1) 
+                else:
+                    Round.update_standing(tournament_id, m.player1.id, 0.5)
+                    Round.update_standing(tournament_id, m.player2.id, 0.5)
             else:
-                Round.update_standing(tournament_id, match[0]["Id"], 0.5)
-                Round.update_standing(tournament_id, match[1]["Id"], 0.5)
+                Round.update_standing(tournament_id, m.player1.id, 1)
+        
+        return True
     
 class RapportController:
     def __init__(self):
@@ -518,18 +561,20 @@ class RapportController:
                 self.main_view.error("Error : Wrong input")
 
     def tournament_player_list(self):
-        tournament_id = TournamentView.get_id_view()
-        tournament_info = Tournament.get_tournament_by_id(tournament_id)
-        player_list = [
-            {"name": p[0], "surname": p[1], "id": p[2]} 
-            for p in tournament_info["players"]
-        ]
-        player_list = sorted(player_list, key=lambda x: x['surname'], reverse=False)
+        target_tournament = TournamentController.select_tournament()
+        if not target_tournament:
+            return
+            
+        player_list_sorted = sorted(target_tournament.players, key=lambda p: p.surname, reverse=False)
+        
+        player_list_dicts = [p.to_dict() for p in player_list_sorted]
 
-        tournament_info['Players'] = player_list
-        RapportView.display_players_in_tournament(tournament_info["name"],player_list)
+        RapportView.display_players_in_tournament(target_tournament.name, player_list_dicts)
 
     def tournament_summary(self):
-        tournament_id = TournamentView.get_id_view()
-        all_rounds_data = Round.tournament_summary(tournament_id)
+        target_tournament = TournamentController.select_tournament(filter_condition= lambda x : x.finish == True)
+        if not target_tournament:
+            return
+            
+        all_rounds_data = Round.tournament_summary(target_tournament.id)
         RapportView.display_round_matches(all_rounds_data)

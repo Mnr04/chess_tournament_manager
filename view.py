@@ -1,9 +1,9 @@
 from tabulate import tabulate
 import datetime
+import re
 import os
 
 class MainView:
-    #Message 
     @staticmethod
     def welcome_message():
         print("--- Welcome in Chess Manager ---")
@@ -19,10 +19,6 @@ class MainView:
     @staticmethod
     def success(message):
         print(message)
-
-    @staticmethod
-    def clean_console():
-        os.system('cls' if os.name == 'nt' else 'clear')
     
     # Main Menu
     def display_menu(self):
@@ -55,7 +51,7 @@ class PlayersView():
         name = InputView.get_valid_name("Last Name: ")
         surname = InputView.get_valid_name("First Name: ")
         birth_date = InputView.get_valid_date("Birth Date (YYYY-MM-DD): ")
-        ine = InputView.get_valid_int("INE: ")
+        ine = InputView.get_valid_ine("INE (AB12345): ")
 
         return {
             "name": name, 
@@ -90,7 +86,7 @@ class PlayersView():
             default=player.birth_date
         )
         
-        ine = InputView.get_valid_int(
+        ine = InputView.get_valid_ine(
             f"INE ({player.ine}): ", 
             default=player.ine
         )
@@ -370,32 +366,36 @@ class RapportView:
 
     @staticmethod
     def display_round_matches(all_rounds_data):
-
+        
         for round_data in all_rounds_data:
             round_name = round_data['name']
             match_list = round_data['match_list']
             
-            print(f"{round_name}") 
+            print(f"\n--- {round_name} ---") 
             
             table_data = []
 
             for match in match_list:
-                p1_score = match[0]["match_score"]
-                p1_name = f"{match[0]['name']} {match[0]['surname']}"
+                # Match Object structure : [[p1_dict, s1], [p2_dict, s2]]
+                p1_data = match[0][0]  
+                p1_score = match[0][1] 
+                p1_name = f"{p1_data['name']} {p1_data['surname']}"
             
-                if match[1] is None: 
+                if match[1] and match[1][0]: 
+                    p2_data = match[1][0]
+                    p2_score = match[1][1]
+                    p2_name = f"{p2_data['name']} {p2_data['surname']}"
+                else:
                     p2_name = "Exempté"
                     p2_score = "0"
-                    p1_score = "1" 
-                else:
-                    p2_score = match[1]["match_score"]
-                    p2_name = f"{match[1]['name']} {match[1]['surname']}"
 
                 row = [p1_name, p1_score, "VS", p2_score, p2_name]
                 table_data.append(row)
 
-            headers = ["Joueur 1", "Pts", "", "Pts", "Joueur 2"]
+            headers = ["Player 1", "Pts", "", "Pts", "Player 2"]
             print(tabulate(table_data, headers=headers, tablefmt="fancy_grid"))
+            
+        input("\nPress any button to return")
       
 class InputView:
     @staticmethod
@@ -451,3 +451,14 @@ class InputView:
             else:
                 print("Error: Name must contain only letters.")
     
+    @staticmethod
+    def get_valid_ine(prompt, default=None):
+        while True:
+            ine_input = input(prompt).strip().upper() 
+            if not ine_input :
+                if default is not None:
+                    return default
+            elif re.match(r"^[A-Z]{2}[0-9]{5}$", ine_input):
+                return ine_input
+            else:
+                print("Invalid Format exemple : AB12345 .")

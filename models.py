@@ -49,6 +49,14 @@ class Player():
         return next((p for p in players_list if p.id == id_to_find),None)
 
     @classmethod
+    def get_player_by_ine(cls, ine):
+        all_players = cls.get_all_players()
+        for player in all_players:
+            if player.ine == ine:
+                return player
+        return None
+    
+    @classmethod
     def update_players(cls, player_id, player_data):
        all_players = cls.get_all_players()
        player_found = False
@@ -81,6 +89,14 @@ class Player():
        all_players_dicts = [player.to_dict() for player in all_players_objects]
        JsonManager.save_data(cls.DB_FILE, all_players_dicts)
 
+    @classmethod
+    def ine_exists(cls, ine_to_check):
+        players = cls.get_all_players()
+        for player in players:
+            if player.ine == ine_to_check:
+                return True
+        return False
+    
 class Tournament():
 
     def __init__(self, name, city, total_round, players, description, start_date, end_date, actual_round = 0, finish = False, id=None):
@@ -205,15 +221,6 @@ class Tournament():
         else :
             return False
 
-    @classmethod     
-    def update_tournament_actual_round(cls , tournament_id):
-        # Get tournament info from id
-        tournament_to_start = cls.get_tournament_by_id(tournament_id)
-        # Update tournament actual round
-        tournament_to_start.actual_round += 1
-        # Transform and save
-        tournament_to_start.save_tournament()
-        
     @staticmethod
     def initialize_standings(tournament_id):
         
@@ -246,21 +253,25 @@ class Round:
         self.end_time = end_time         
         self.matches = matches if matches is not None else []
     
-    class Round:
-        def __init__(self, name, start_time, end_time=None, matches=None):
-            self.name = name
-            self.start_time = start_time
-            self.end_time = end_time
-            self.matches = matches if matches else []
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "start_time": self.start_time,
+            "end_time": self.end_time,
+            "matches": [match.to_dict() for match in self.matches]
+        }
 
     @classmethod
-    def create_round(cls, round_number, tournament_id):
-        #Create match list file + round folder
-        round_number = str(round_number)
-        file_path = Path("data") / "tournament" / tournament_id /f"Round_{round_number}"/ "Match.json"
-        directory_to_create = os.path.dirname(file_path)
-        os.makedirs(directory_to_create, exist_ok=True)
-
+    def from_dict(cls, data):
+        matches_data = data.get("matches", [])
+        matches_objects = [Match.from_dict(m) for m in matches_data]
+        return cls(
+            name=data['name'],
+            start_time=data['start_time'],
+            end_time=data['end_time'],
+            matches=matches_objects
+        )
+    
     @staticmethod
     def get_round_players_list(tournament_id):
         file_path = Path("data") / "tournament" / tournament_id / "standings.json"
@@ -280,10 +291,6 @@ class Round:
 
         return players_list
         
-    def update_match_list(tournament_id, match_list,round_number):
-        file_path = Path("data") /  "tournament" /tournament_id / f"Round_{round_number}" /"Match.json"
-        JsonManager.save_data(file_path, match_list)
-
     @classmethod
     def update_standing(cls, tournament_id, player_id, points_to_add):
         file_path = Path("data") / "tournament" / tournament_id / "standings.json"
@@ -303,62 +310,35 @@ class Round:
         # Save the data 
         JsonManager.save_data(file_path, standing)
 
-    def start_time_round(round_number, tournament_id):
-        file_path = Path("data") / "tournament" / tournament_id / f"Round_{round_number}" /"time.json"
+    def save_round(self, tournament_id):
+        file_path = Path("data") / "tournament" / tournament_id / self.name / "Match.json"
+        
+        directory = os.path.dirname(file_path)
+        os.makedirs(directory, exist_ok=True)
+        
+        JsonManager.save_data(file_path, self.to_dict())
 
-        # Get the time data
-        start_timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-
-        time = {
-            'start_time' : start_timestamp,
-            'end_time' : ""
-        }
-
-        JsonManager.save_data(file_path, time)
-    
-    def end_time_round(round_number, tournament_id): 
-        file_path = Path("data") / "tournament" / tournament_id / f"Round_{round_number}" /"time.json"
-    
-        try:
-            data = JsonManager.load_data(file_path)
-        except FileNotFoundError:
-            print(f"Error {round_number} not exists ")
-            return
-
-        end_timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        data['end_time'] = end_timestamp 
-
-        JsonManager.save_data(file_path, data)
-
+    @staticmethod
     def tournament_summary(tournament_id):
         tournament_dir = Path("data") / "tournament" / tournament_id
-    
         if tournament_dir.exists():
             round_folders = [x for x in tournament_dir.iterdir() if x.is_dir()]
-        else:
-            round_folders = []
+        else: return []
 
         round_folders.sort()
-        
         all_rounds_data = []
 
         for folder in round_folders:
             target_file = folder / "Match.json" 
-
             if target_file.exists():
                 data = JsonManager.load_data(target_file)
+                match_list = data.get("matches", []) 
                 
-                current_round_name = folder.name 
-       
                 round_summary = {
-                    "name": current_round_name, 
-                    "match_list": data      
+                    "name": folder.name, 
+                    "match_list": match_list      
                 }
-
                 all_rounds_data.append(round_summary)
-            else:
-                print(f"No {folder.name}")
-        
         return all_rounds_data
 
     @staticmethod
@@ -369,17 +349,41 @@ class Round:
         
         for round_data in summary:
             for match in round_data["match_list"]:
-                p1 = match[0]['id'] 
-                if match[1]:
-                    p2 = match[1]['id']
+                
+                p1 = match[0][0]['id'] 
+                
+                if match[1] and match[1][0]: 
+                    p2 = match[1][0]['id']
                     pairs_list.append([p1, p2])
                     
         return pairs_list
     
+class Match:
+    def __init__(self, player1, player2, score1=0, score2=0):
+        self.player1 = player1 
+        self.player2 = player2 
+        self.score1 = score1
+        self.score2 = score2
 
-class Match():
-    def __init__(self, player_1, player_2, score_1 = 0, score_2 = 0):
-        self.player_1 = player_1,
-        self.player_2 = player_2,
-        self.score1 = score_1,
-        self.score2 = score_2
+    def to_dict(self):
+        p1_dict = self.player1.to_dict()
+        p2_dict = self.player2.to_dict() if self.player2 else None
+        
+        return (
+            [p1_dict, self.score1],
+            [p2_dict, self.score2]
+        )
+
+    @classmethod
+    def from_dict(cls, data):
+        
+        player1 = Player.from_dict(data[0][0])
+        score1 = data[0][1]
+        
+        player2 = None
+        score2 = 0
+        if data[1][0]: 
+            player2 = Player.from_dict(data[1][0])
+            score2 = data[1][1]
+
+        return cls(player1, player2, score1, score2)
