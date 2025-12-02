@@ -2,9 +2,8 @@ from tabulate import tabulate
 import datetime
 import re
 import questionary
-from questionary import Choice
+from questionary import Choice, Separator
 from rich.console import Console
-from rich.theme import Theme
 from rich.panel import Panel
 from rich.text import Text
 
@@ -111,12 +110,20 @@ class PlayersView():
         }
     
     @staticmethod
-    def display_players_list(players_list):
-        print("\n--- Players List ---")
-        for i, player in enumerate(players_list, start=1):
-            print(f"[{i}] {player.name} {player.surname} ({player.ine})")
-            
-        print("[0] Return")
+    def select_player(players_list):
+        choices = []
+        for player in players_list:
+            display_name = f"{player.name} {player.surname} ({player.ine}) 👤"
+            choices.append(Choice(display_name, value=player))
+        
+        choices.append(Separator())
+        choices.append(Choice("Return ❌", value="RETURN"))
+
+        choice = questionary.select(
+            "Select a player:",
+            choices=choices
+        ).ask()
+        return choice
     
     @staticmethod
     def display_player_info(player):
@@ -143,10 +150,6 @@ class PlayersView():
     
         input("Press any button to return")
 
-    #Delete View
-    def display_delete_view(cls, player_info):
-        MainView.success(f"Player {player_info.name} {player_info.surname} succesfuly delete")
-        input("Press any button to return")
 
 class TournamentView():
 
@@ -236,12 +239,16 @@ class TournamentView():
     
     @staticmethod
     def display_players_update_menu():
-        print("Do you add or remove player list")
-        print(" [1] Add player 👤")
-        print(" [2] Remove Player 🏆")
-        print(" [3] Finish and Save")
-        response =input("Your choice: ")
-        return response
+        choice = questionary.select(
+            "Do you add or remove player list:",
+            choices=[
+                Choice("Add player 👤", value="1"),
+                Choice("Remove Player 🏆", value="2"),
+                questionary.Separator(),
+                Choice("Finish and Save 📖", value="3"),
+            ]
+        ).ask()
+        return choice
     
     @staticmethod
     def display_numbers_players(action):
@@ -315,6 +322,22 @@ class TournamentView():
             print(f"[{i}] {tournament.name} {tournament.city}")
             
         print("[0] Return")
+    
+    @staticmethod
+    def select_tournament(all_tournaments):
+        choices = []
+        for tournament in all_tournaments:
+            display_name = f"{tournament.name}  ({tournament.city})  🏆"
+            choices.append(Choice(display_name, value=tournament))
+        
+        choices.append(Separator())
+        choices.append(Choice("Return ❌", value="RETURN"))
+
+        choice = questionary.select(
+            "Select a tournament:",
+            choices=choices
+        ).ask()
+        return choice
 
     @staticmethod
     def get_player_to_delete(players_list):
