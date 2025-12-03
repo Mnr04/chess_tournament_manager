@@ -5,6 +5,7 @@ from database import JsonManager
 from pathlib import Path
 import os
 
+
 class Player():
 
     DB_FILE = Path("data") / "players_infos.json"
@@ -18,13 +19,13 @@ class Player():
 
     def to_dict(self):
         return {
-            "id": self.id,  
+            "id": self.id,
             "name": self.name,
             "surname": self.surname,
             "birth_date": self.birth_date,
             "ine": self.ine
         }
-    
+
     @classmethod
     def from_dict(cls, data):
         return cls(
@@ -34,13 +35,13 @@ class Player():
             ine=data['ine'],
             id=data['id']
         )
-    
+
     @classmethod
     def get_all_players(cls):
         players_data = JsonManager.load_data(cls.DB_FILE)
         players_objects = [cls.from_dict(data) for data in players_data]
         return players_objects
-    
+
     @classmethod
     def get_players_by_id(cls, id_to_find):
         players_list = cls.get_all_players()
@@ -53,7 +54,7 @@ class Player():
             if player.ine == ine:
                 return player
         return None
-    
+
     @classmethod
     def update_players(cls, player_id, player_data):
        all_players = cls.get_all_players()
@@ -61,40 +62,33 @@ class Player():
 
        for player in all_players:
            if player.id == player_id:
-               
+
                player.surname = player_data['surname']
                player.name = player_data['name']
                player.birth_date = player_data['birth_date']
                player.ine = player_data['ine']
-               
+
                player_found = True
-               break 
+               break
 
        if player_found:
            all_players_dicts = [p.to_dict() for p in all_players]
-           
+
            JsonManager.save_data(cls.DB_FILE, all_players_dicts)
-    
+
     def save_new_player(self):
         all_players_objects = self.get_all_players()
         all_players_objects.append(self)
         all_players_dicts = [player.to_dict() for player in all_players_objects]
         JsonManager.save_data(self.DB_FILE, all_players_dicts)
-  
+
     @classmethod
     def delete_player(cls, target_id):
        all_players_objects = [p for p in cls.get_all_players() if p.id != target_id]
        all_players_dicts = [player.to_dict() for player in all_players_objects]
        JsonManager.save_data(cls.DB_FILE, all_players_dicts)
 
-    @classmethod
-    def ine_exists(cls, ine_to_check):
-        players = cls.get_all_players()
-        for player in players:
-            if player.ine == ine_to_check:
-                return True
-        return False
-    
+
 class Tournament():
 
     def __init__(self, name, city, total_round, players, description, start_date, end_date, actual_round = 0, finish = False, id=None):
@@ -111,7 +105,7 @@ class Tournament():
 
     def to_dict(self):
         tournois_info = {
-            "id" : self.id,
+            "id": self.id,
             "name" : self.name,
             "city" : self.city,
             "start_date": self.start_date,
@@ -123,11 +117,11 @@ class Tournament():
             "finish": self.finish
         }
         return tournois_info
-    
+
     @classmethod
     def from_dict(cls, data):
         players_data = data.get("players", [])
-        
+
         players_objects = [Player.from_dict(p) for p in players_data]
 
         return cls(
@@ -142,20 +136,20 @@ class Tournament():
             actual_round = data["actual_round"],
             finish = data["finish"]
         )
-    
+
     @staticmethod
     def get_file_path(tournament_id):
         # Get the path for tournament general info
         file_path = Path("data") / "tournament" /tournament_id /"tournament_general_info.json"
         return file_path
- 
+
     def save_tournament(self):
-        # Transform Data  
+        # Transform Data
         tournament_data = self.to_dict()
         # Save with JsonManager
         JsonManager.save_data(self.get_file_path(tournament_data['id']), tournament_data)
 
-    @staticmethod  
+    @staticmethod
     def get_tournaments_id_list():
         tournaments_list = []
 
@@ -164,18 +158,18 @@ class Tournament():
         try:
             for file_name in os.listdir(path):
                 tournaments_list.append(file_name)
-            
+
             return tournaments_list
 
         except FileNotFoundError:
             print("Folder don't exist")
             return []
-        
+
     @classmethod
     def get_tournament_by_id(cls, tournament_id):
         data = JsonManager.load_data(cls.get_file_path(tournament_id))
         return cls.from_dict(data)
-       
+
     @classmethod
     def get_all_tournement(cls):
         all_tournament_data_dict = []
@@ -192,7 +186,7 @@ class Tournament():
     @classmethod
     def update_tournament(cls, tournament_id, new_data_dict, players_data_list):
        tournament = cls.get_tournament_by_id(tournament_id)
-       
+
        tournament.name = new_data_dict['name']
        tournament.city = new_data_dict['city']
        tournament.start_date = new_data_dict['start_date']
@@ -202,14 +196,14 @@ class Tournament():
 
 
        tournament.players = players_data_list
-        
+
         #Save
        tournament.save_tournament()
-       
+
     @classmethod
     def delete_tournament(cls, target_id):
 
-        # Get the file 
+        # Get the file
         path = Path('data') / "tournament" / target_id
 
         # Delete the id corresponding file
@@ -221,7 +215,7 @@ class Tournament():
 
     @staticmethod
     def initialize_standings(tournament_id):
-        
+
         file_path = Path("data") /"tournament"/ tournament_id/ "standings.json"
         if os.path.exists(file_path):
             return
@@ -229,7 +223,7 @@ class Tournament():
         tournament_data = Tournament.get_tournament_by_id(tournament_id)
         # Create players list from tournament_data
         player_list = [
-            {"name": p.name, "surname": p.surname, "id": p.id, "score": 0} 
+            {"name": p.name, "surname": p.surname, "id": p.id, "score": 0}
             for p in tournament_data.players
             ]
         # Shuffle player list
@@ -244,13 +238,14 @@ class Tournament():
         #Transform into dict and save
         tournament_to_finish.save_tournament()
 
+
 class Round:
     def __init__(self, name, start_time, end_time=None, matches=None):
-        self.name = name                 
-        self.start_time = start_time     
-        self.end_time = end_time         
+        self.name = name
+        self.start_time = start_time
+        self.end_time = end_time
         self.matches = matches if matches is not None else []
-    
+
     def to_dict(self):
         return {
             "name": self.name,
@@ -269,12 +264,12 @@ class Round:
             end_time=data['end_time'],
             matches=matches_objects
         )
-    
+
     @staticmethod
     def get_round_players_list(tournament_id):
         file_path = Path("data") / "tournament" / tournament_id / "standings.json"
         standings_data = JsonManager.load_data(file_path)
-        
+
         players_list = []
 
         for player in standings_data:
@@ -288,32 +283,32 @@ class Round:
             players_list.append(player_obj)
 
         return players_list
-        
+
     @classmethod
     def update_standing(cls, tournament_id, player_id, points_to_add):
         file_path = Path("data") / "tournament" / tournament_id / "standings.json"
 
         if not os.path.exists(file_path):
-            return 
+            return
 
         standing = JsonManager.load_data(file_path)
 
         for p in standing:
-            if p["id"] == player_id: 
+            if p["id"] == player_id:
                 p["score"] += points_to_add
                 break
-        
+
         #Sort ranking
         standing = sorted(standing, key=lambda x: x['score'], reverse=True)
-        # Save the data 
+        # Save the data
         JsonManager.save_data(file_path, standing)
 
     def save_round(self, tournament_id):
         file_path = Path("data") / "tournament" / tournament_id / self.name / "Match.json"
-        
+
         directory = os.path.dirname(file_path)
         os.makedirs(directory, exist_ok=True)
-        
+
         JsonManager.save_data(file_path, self.to_dict())
 
     @staticmethod
@@ -327,14 +322,14 @@ class Round:
         all_rounds_data = []
 
         for folder in round_folders:
-            target_file = folder / "Match.json" 
+            target_file = folder / "Match.json"
             if target_file.exists():
                 data = JsonManager.load_data(target_file)
-                match_list = data.get("matches", []) 
-                
+                match_list = data.get("matches", [])
+
                 round_summary = {
-                    "name": folder.name, 
-                    "match_list": match_list      
+                    "name": folder.name,
+                    "match_list": match_list
                 }
                 all_rounds_data.append(round_summary)
         return all_rounds_data
@@ -342,31 +337,32 @@ class Round:
     @staticmethod
     def get_all_pairs_played(tournament_id):
         summary = Round.tournament_summary(tournament_id)
-        
+
         pairs_list = []
-        
+
         for round_data in summary:
             for match in round_data["match_list"]:
-                
-                p1 = match[0][0]['id'] 
-                
-                if match[1] and match[1][0]: 
+
+                p1 = match[0][0]['id']
+
+                if match[1] and match[1][0]:
                     p2 = match[1][0]['id']
                     pairs_list.append([p1, p2])
-                    
+
         return pairs_list
-    
+
+
 class Match:
     def __init__(self, player1, player2, score1=0, score2=0):
-        self.player1 = player1 
-        self.player2 = player2 
+        self.player1 = player1
+        self.player2 = player2
         self.score1 = score1
         self.score2 = score2
 
     def to_dict(self):
         p1_dict = self.player1.to_dict()
         p2_dict = self.player2.to_dict() if self.player2 else None
-        
+
         return (
             [p1_dict, self.score1],
             [p2_dict, self.score2]
@@ -374,13 +370,13 @@ class Match:
 
     @classmethod
     def from_dict(cls, data):
-        
+
         player1 = Player.from_dict(data[0][0])
         score1 = data[0][1]
-        
+
         player2 = None
         score2 = 0
-        if data[1][0]: 
+        if data[1][0]:
             player2 = Player.from_dict(data[1][0])
             score2 = data[1][1]
 

@@ -7,14 +7,14 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
-console= Console()
+console = Console()
 
 
 class MainView:
     @staticmethod
     def welcome_message():
         console.print(Panel.fit("♟️  Chess Manager",  style="bold blue"))
-    
+
     @staticmethod
     def finish_message():
         print("--- See you next time ---")
@@ -25,12 +25,15 @@ class MainView:
 
     @staticmethod
     def success(message):
+
         console.print(f"✅ [bold green]{message}[/bold green]")
+
     @staticmethod
     def clean_console():
         console.clear()
 
-    def display_menu(self):
+    @staticmethod
+    def display_menu():
         choice = questionary.select(
             "Select an option:",
             choices=[
@@ -38,12 +41,14 @@ class MainView:
                 Choice("Tournaments 🏆", value="2"),
                 Choice("Reports 📖", value="3"),
                 questionary.Separator(),
-                Choice("Quitter ❌", value="4")
+                Choice("Quit ❌", value="4")
             ]
         ).ask()
         return choice
-    
+
+
 class PlayersView():
+
     @staticmethod
     def display_players_sub_menu():
         response = questionary.select(
@@ -58,96 +63,94 @@ class PlayersView():
                 Choice("Return 🔙", value="6")
             ]
         ).ask()
-        
+
         return response
-    
-    #Create Player
+
     @staticmethod
     def get_new_player_inputs():
         print("\n--- Add a new player ---")
-        
+
         name = InputView.get_valid_name("Last Name: ")
         surname = InputView.get_valid_name("First Name: ")
         birth_date = InputView.get_valid_date("Birth Date (YYYY-MM-DD): ")
         ine = InputView.get_valid_ine("INE (AB12345): ")
 
         return {
-            "name": name, 
-            "surname": surname, 
-            "birth_date": birth_date, 
+            "name": name,
+            "surname": surname,
+            "birth_date": birth_date,
             "ine": ine
         }
-    
+
     @staticmethod
     def update_player_inputs(player):
-        print(f"\n--- Update Player {player.name} {player.surname} ---") 
-        
+        print(f"\n--- Update Player {player.name} {player.surname} ---")
+
         surname = InputView.get_valid_name(
-            f"Last Name ({player.surname}): ", 
+            f"Last Name ({player.surname}): ",
             default=player.surname
         )
-        
+
         name = InputView.get_valid_name(
-            f"First Name ({player.name}): ", 
+            f"First Name ({player.name}): ",
             default=player.name
         )
-        
+
         birth_date = InputView.get_valid_date(
-            f"Birth Date ({player.birth_date}): ", 
+            f"Birth Date ({player.birth_date}): ",
             default=player.birth_date
         )
-        
+
         ine = InputView.get_valid_ine(
-            f"INE ({player.ine}): ", 
+            f"INE ({player.ine}): ",
             default=player.ine
         )
 
         return {
-            "name": name, 
-            "surname": surname, 
-            "birth_date": birth_date, 
+            "name": name,
+            "surname": surname,
+            "birth_date": birth_date,
             "ine": ine
         }
-    
+
     @staticmethod
     def select_player(players_list):
         choices = []
         for player in players_list:
             display_name = f"{player.name} {player.surname} ({player.ine}) 👤"
             choices.append(Choice(display_name, value=player))
-        
+
         choices.append(Separator())
         choices.append(Choice("Return ❌", value="RETURN"))
 
-        choice = questionary.select(
+        return questionary.select(
             "Select a player:",
             choices=choices
         ).ask()
-        return choice
-    
+
     @staticmethod
     def display_player_info(player):
         content = Text()
-        content.append(f"🆔 ID: {player.id}\n", style="bold white")
-        content.append(f"👤 Name: {player.surname.upper()} {player.name}\n", style="bold white")
-        content.append(f"🎂 Birth Date: {player.birth_date}\n", style="bold white")
-        content.append(f"📜 INE: {player.ine}", style="bold white")
+        content.append(f"🆔 ID: {player.id}\n")
+        content.append(f"👤 Name: {player.surname.upper()} {player.name}\n")
+        content.append(f"🎂 Birth Date: {player.birth_date}\n")
+        content.append(f"📜 INE: {player.ine}")
 
         console.print(Panel(
-            content, 
-            title=f"Player Info", 
-            expand=False, 
+            content,
+            title="Player Info",
+            expand=False,
             border_style="blue"
         ))
-        
+
         questionary.press_any_key_to_continue().ask()
-    #View all Players
+
     @staticmethod
     def display_all_players(all_players):
         # Transform player objects in dictonnary
         table_data = [player.to_dict() for player in all_players]
         print(tabulate(table_data, headers="keys", tablefmt="fancy_grid"))
-    
+
         input("Press any button to return")
 
 
@@ -168,94 +171,72 @@ class TournamentView():
                 Choice("Return 🔙", value="7")
             ]
         ).ask()
-        
+
         return response
-    
+
     @staticmethod
     def get_tournament_inputs():
         print("\n--- Create a new tournament ---")
-        
+
         name = InputView.get_valid_name("Tournament Name: ")
         city = InputView.get_valid_name("City: ")
         start_date = InputView.get_valid_date("Start Date (YYYY-MM-DD): ")
         end_date = InputView.get_valid_date("End Date (YYYY-MM-DD): ")
-        total_round = InputView.get_valid_int("Total round number (default = 4): ", 4)
-        description = input("Description: ") 
-    
-        numbers_of_players = InputView.get_valid_int("How many players?: ")
+        total_round = InputView.get_valid_int("Total round (default = 4): ", 4)
+        description = input("Description: ")
 
         return {
-            "name": name, 
-            "city": city, 
-            "total_round": total_round,   
-            "description": description,   
-            "start_date": start_date,     
-            "end_date": end_date          
-        }, numbers_of_players
+            "name": name,
+            "city": city,
+            "total_round": total_round,
+            "description": description,
+            "start_date": start_date,
+            "end_date": end_date
+        }
 
     @staticmethod
     def update_tournament_inputs(tournament):
-        print(f"\n--- Update Tournament {tournament.name} ---") 
-        
+        print(f"\n--- Update Tournament {tournament.name} ---")
+
         name = InputView.get_valid_name(
-            f"Name ({tournament.name}): ", 
+            f"Name ({tournament.name}): ",
             default=tournament.name
         )
-        
+
         city = InputView.get_valid_name(
-            f"City ({tournament.city}): ", 
+            f"City ({tournament.city}): ",
             default=tournament.city
         )
-        
+
         start_date = InputView.get_valid_date(
-            f"Start Date ({tournament.start_date}): ", 
+            f"Start Date ({tournament.start_date}): ",
             default=tournament.start_date
         )
 
         end_date = InputView.get_valid_date(
-            f"End date ({tournament.end_date}): ", 
+            f"End date ({tournament.end_date}): ",
             default=tournament.end_date
         )
-        
+
         total_round = InputView.get_valid_int(
-            f"Total Round ({tournament.total_round}): ", 
+            f"Total Round ({tournament.total_round}): ",
             default=tournament.total_round
         )
 
         description = InputView.get_valid_name(
-            f"Description ({tournament.description}): ", 
+            f"Description ({tournament.description}): ",
             default=tournament.description
         )
 
         return {
-            "name": name, 
-            "city": city, 
-            "total_round": total_round, 
-            "description": description, 
-            "players": [], 
-            "start_date": start_date, 
+            "name": name,
+            "city": city,
+            "total_round": total_round,
+            "description": description,
+            "start_date": start_date,
             "end_date": end_date
         }
-    
-    @staticmethod
-    def display_players_update_menu():
-        choice = questionary.select(
-            "Do you add or remove player list:",
-            choices=[
-                Choice("Add player 👤", value="1"),
-                Choice("Remove Player 🏆", value="2"),
-                questionary.Separator(),
-                Choice("Finish and Save 📖", value="3"),
-            ]
-        ).ask()
-        return choice
-    
-    @staticmethod
-    def display_numbers_players(action):
-        print(f"How many player you want to {action}? ")
-        numbers_of_players = input("Your choice ? : ")
-        return numbers_of_players
-    
+
     @staticmethod
     def print_players_table(players_list):
         if not players_list:
@@ -263,9 +244,10 @@ class TournamentView():
         else:
             table_data = [player.to_dict() for player in players_list]
             print(tabulate(table_data, headers="keys", tablefmt="fancy_grid"))
-  
+
     @staticmethod
-    def display_tournament_info(tournament): 
+    def display_tournament_info(tournament):
+        MainView.clean_console()
         print("\n--- TOURNAMENT DETAILS ---")
 
         general_data = [
@@ -275,7 +257,7 @@ class TournamentView():
             ["End Date", tournament.end_date],
             ["Total Rounds", tournament.total_round],
             ["Finish", "Finished" if tournament.finish else "In Progress"],
-            ["Description", tournament.description] 
+            ["Description", tournament.description]
         ]
 
         print(tabulate(general_data, tablefmt="fancy_grid"))
@@ -287,106 +269,147 @@ class TournamentView():
             print("   No players registered yet.")
         else:
             headers = ["Name", "Surname", "ID"]
-            
-            players_data = [[p.name, p.surname, p.id] for p in tournament.players]
 
-            print(tabulate(players_data, headers=headers, tablefmt="fancy_grid"))
-        
+            players = [[p.name, p.surname, p.id] for p in tournament.players]
+
+            print(tabulate(players, headers=headers, tablefmt="fancy_grid"))
+
         input("\nPress Enter to return...")
-    
+        MainView.clean_console()
+
     @staticmethod
     def display_all_tournament(all_tournaments):
+        MainView.clean_console()
         table_data = [
             {
-                "ID": data.id, 
-                "Name": data.name, 
+                "ID": data.id,
+                "Name": data.name,
                 "City": data.city,
-                "Players": len(data.players), 
-                "Description": data.description[0:15] if data.description else ""
+                "Players": len(data.players),
+                "Resume": data.description[0:15] if data.description else ""
             } for data in all_tournaments
         ]
-            
-        print(tabulate(table_data, headers="keys", tablefmt="fancy_grid")) 
-        
-        input("Press any button to return")
 
-    @staticmethod
-    def display_delete_view(tournament_id):
-        print(f"Tournament {tournament_id} succesfuly delete")
+        print(tabulate(table_data, headers="keys", tablefmt="fancy_grid"))
+
         input("Press any button to return")
-    
-    @staticmethod
-    def display_tournament_list(all_tournaments):
-        print("\n--- Tournament List ---")
-        for i, tournament in enumerate(all_tournaments, start=1):
-            print(f"[{i}] {tournament.name} {tournament.city}")
-            
-        print("[0] Return")
-    
+        MainView.clean_console()
+
     @staticmethod
     def select_tournament(all_tournaments):
         choices = []
-        for tournament in all_tournaments:
-            display_name = f"{tournament.name}  ({tournament.city})  🏆"
-            choices.append(Choice(display_name, value=tournament))
-        
-        choices.append(Separator())
-        choices.append(Choice("Return ❌", value="RETURN"))
 
-        choice = questionary.select(
-            "Select a tournament:",
+        for tournament in all_tournaments:
+            round_time = f"{tournament.actual_round}/{tournament.total_round}"
+            label = f"{tournament.name} ({tournament.city})"
+
+            display_name = f"{label:<35} | Round {round_time} 🏆"
+
+            choices.append(Choice(display_name, value=tournament))
+
+        choices.append(Choice("🔙 Return to Main Menu", value="None"))
+
+        # 4. Prompt the user
+        return questionary.select(
+            "Select a tournament",
             choices=choices
         ).ask()
-        return choice
 
     @staticmethod
-    def get_player_to_delete(players_list):
-        print("\n--- DELETE PLAYER ---")
-        
-        for i, p in enumerate(players_list):
-            print(f"[{i + 1}] {p.name} {p.surname}") 
-            
-        choice = InputView.get_valid_int(f"Number to remove (0 to cancel): ")
-        return choice
+    def get_players_to_delete(players_list):
+        if not players_list:
+            print("⚠️ List is empty.")
+            return []
+
+        choices = [
+            Choice(f"{p.name} {p.surname}", value=p)
+            for p in players_list
+        ]
+
+        return questionary.checkbox(
+            "Select players to remove :",
+            choices=choices,
+            instruction="(Space to select, Enter to confirm)"
+        ).ask()
+
+    def display_manage_menu():
+        return questionary.select(
+            "Manage Players:",
+            choices=[
+                Choice("➕ Add Players", value="add"),
+                Choice("➖ Remove Players", value="remove"),
+                Choice("✅ Confirm & Start", value="confirm"),
+                Choice("🔙 Back", value="back")
+            ],
+        ).ask()
+
+    def select_players_to_add(available_players):
+        if not available_players:
+            print("⚠️ No more players available to add.")
+            return []
+
+        choices = [
+            Choice(f"{p.name} {p.surname} ({p.id})", value=p)
+            for p in available_players
+        ]
+
+        return questionary.checkbox(
+            "Select players to add to the tournament:",
+            choices=choices,
+            instruction="(Space to select, Enter to confirm)"
+        ).ask()
+
 
 class RoundView():
-    def display_continue_tournament(actual_round, total_round):
-        print(f'Round {actual_round} / {total_round} Finished')
-        print("[Any Button] Continue")
-        print("[2] Stop")
-        reponse = input("Your choice: ")
-        return reponse
+    def display_continue_tournament(actual_round):
+        choices = [
+            "Continue",
+            "Stop"
+        ]
+        answer = questionary.select(
+            f"Continue to round_{actual_round+1}",
+            choices=choices,
+        ).ask()
+
+        if answer == choices[0]:
+            return "yes"
+        else:
+            return "2"
+
 
 class MatchView():
     @staticmethod
-    def display_match(match):
-        if match[1] is None:
-            print(f"{match[0]['name']} is exempt and wins 1 point.")
-            return 1, 0 
-        
-        player1_data = match[0] 
-        player2_data = match[1]
+    def display_match(match_data):
+        player1 = match_data[0]
+        player2 = match_data[1]
 
-        print(f"\n--- MATCH : {player1_data['name']} vs {player2_data['name']} ---")
-        
-        valid_scores = ['0', '0.5', '1']
+        # Exempt player
+        if player2 is None:
+            questionary.print(f" {player1['name']} is exempt for this round.")
+            questionary.print("   They automatically win 1 point.")
+            return 1.0, 0.0
 
-        while True:
-            score1 = input(f"Score {player1_data['name']} (0, 0.5, 1): ")
-            if score1 in valid_scores:
-                break 
-            print("Invalid score. Please enter 0, 0.5 or 1.")
+        # Standard Match
+        print(f"\n--- ⚔️  MATCH: {player1['name']} vs {player2['name']} ---")
 
-        while True:
-            score2 = input(f"Score {player2_data['name']} (0, 0.5, 1): ")
-            if score2 in valid_scores:
-                if float(score1) + float(score2) != 1:
-                     print(f"Total must be 1 (Ex: 1 vs 0, or 0.5 vs 0.5)")
-                     continue 
-                break
-            print("Invalid score.")
+        choices = [
+            f"{player1['name']} wins",
+            f"{player2['name']} wins",
+            "Draw"
+        ]
 
-        return score1, score2
+        answer = questionary.select(
+            f"What is the result of {player1['name']} VS {player2['name']}?",
+            choices=choices,
+        ).ask()
+
+        if answer == choices[0]:
+            return 1.0, 0.0
+        elif answer == choices[1]:
+            return 0.0, 1.0
+        else:
+            return 0.5, 0.5
+
 
 class RepportView:
     @staticmethod
@@ -403,72 +426,49 @@ class RepportView:
                 Choice("Return to Main Menu 🔙", value="6")
             ]
         ).ask()
-        
+
         return response
-    
+
     def display_players_in_tournament(tournament_name, player_list):
         print(f"Players list for {tournament_name} Tournament 🏆")
         print(tabulate(player_list, headers="keys", tablefmt="fancy_grid"))
-        
+
         input("Press any button to return")
 
     @staticmethod
-    def display_round_matches(all_rounds_data):
-        
-        for round_data in all_rounds_data:
-            round_name = round_data['name']
-            match_list = round_data['match_list']
-            
-            print(f"\n--- {round_name} ---") 
-            
-            table_data = []
+    def display_round_matches(clean_rounds_data):
+        header = ["Player 1", "Pts", "", "Pts", "Player 2"]
 
-            for match in match_list:
-                # Match Object structure : [[p1_dict, s1], [p2_dict, s2]]
-                p1_data = match[0][0]  
-                p1_score = match[0][1] 
-                p1_name = f"{p1_data['name']} {p1_data['surname']}"
-            
-                if match[1] and match[1][0]: 
-                    p2_data = match[1][0]
-                    p2_score = match[1][1]
-                    p2_name = f"{p2_data['name']} {p2_data['surname']}"
-                else:
-                    p2_name = "Exempté"
-                    p2_score = "0"
+        for round_info in clean_rounds_data:
+            print(f"\n--- {round_info['name']} ---")
 
-                row = [p1_name, p1_score, "VS", p2_score, p2_name]
-                table_data.append(row)
+            matches = round_info['matches']
 
-            headers = ["Player 1", "Pts", "", "Pts", "Player 2"]
-            print(tabulate(table_data, headers=headers, tablefmt="fancy_grid"))
-            
+            if matches:
+                print(tabulate(matches, headers=header, tablefmt="fancy_grid"))
+            else:
+                print("   No matches.")
+
         input("\nPress any button to return")
-      
+
+
 class InputView:
-    @staticmethod
-    def get_non_empty_string(prompt):
-        while True:
-            user_input = input(prompt)
-            if user_input.strip(): 
-                return user_input
-            print("Error: This field cannot be empty.")
 
     @staticmethod
     def get_valid_date(prompt, default=None):
         while True:
             date_str = input(prompt).strip()
-            
+
             if not date_str:
                 if default is not None:
-                    return default 
-                
+                    return default
+
                 print("Error: This field cannot be empty.")
-                continue 
+                continue
 
             try:
-                date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-                return date_obj.isoformat()
+                date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+                return date.isoformat()
             except ValueError:
                 print("Error: Invalid date format. Please use YYYY-MM-DD.")
 
@@ -490,20 +490,20 @@ class InputView:
             if not user_input:
                 if default is not None:
                     return default
-                
+
                 print("Error: This field cannot be empty.")
                 continue
-            
+
             if user_input.isalpha():
                 return user_input
             else:
                 print("Error: Name must contain only letters.")
-    
+
     @staticmethod
     def get_valid_ine(prompt, default=None):
         while True:
-            ine_input = input(prompt).strip().upper() 
-            if not ine_input :
+            ine_input = input(prompt).strip().upper()
+            if not ine_input:
                 if default is not None:
                     return default
             elif re.match(r"^[A-Z]{2}[0-9]{5}$", ine_input):
