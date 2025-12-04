@@ -1,6 +1,6 @@
 # ♟️ Chess Tournament Manager
 
-A command-line interface (CLI) program developed in Python to manage offline chess tournaments. This software allows you to create players, manage tournaments, automate match pairings, and generate reports.
+A command-line interface (CLI) program developed in Python to manage offline chess tournaments. This application allows you to create players, manage tournaments, automate match pairings, and generate reports.
 
 The project follows the **MVC** (Model-View-Controller) architecture.
 
@@ -11,9 +11,9 @@ The project follows the **MVC** (Model-View-Controller) architecture.
 * **Tournament Management**: Configuration (name, location, dates, number of rounds), adding players.
 
 * **Tournament System**:
-    * Automatic pairing generation .
+    * Automatic pairing generation.
     * Score management (Win, Loss, Draw).
-    * Exempt player management .
+    * Exempt player management.
 
 * **Reports**: Standings, alphabetical player list, tournament history.
 
@@ -41,11 +41,11 @@ On macOs / Linux:
 
 pip install -r requirements.txt
 
-## Launch the program 🚀
+## 🚀 Launch the program 
 
 python main.py
 
-### Navigation
+### ➤ Navigation
 
 - Use the Arrow Keys (Up/Down) to navigate through menus.
 - Press Enter to validate a choice.
@@ -55,10 +55,10 @@ python main.py
 
 The project includes a linting report generated with flake8 to ensure compliance with PEP 8 standards.
 
-### View the existing report
+### 👁️ View the existing report
 Simply open the following file in your web browser: flake-report/index.html
 
-### Generate a new report
+### 📝 Generate a new report
 If you modify the code and want to check its quality or generate a new HTML report:
 
 Ensure you are at the root of the project.
