@@ -24,9 +24,9 @@ Follow these steps to set up the development environment:
 
 ### 1. Clone the repository
 Clone the GitHub repository or download the source files.
-
+```bash
 git clone https://github.com/Mnr04/chess_tournament_manager.git
-
+```
 ### 2. Create a virtual environment
 
 On windows:
@@ -35,17 +35,18 @@ On windows:
    env\Scripts\activate
 ```
 On macOs / Linux:
+```bash
 python3 -m venv env
 source env/bin/activate
-
+```
 ### 3. Install dependencies
-
+```bash
 pip install -r requirements.txt
-
+```
 ## 🚀 Launch the program 
-
+```bash
 python main.py
-
+```
 ### ➤ Navigation
 
 - Use the Arrow Keys (Up/Down) to navigate through menus.
@@ -65,5 +66,6 @@ If you modify the code and want to check its quality or generate a new HTML repo
 Ensure you are at the root of the project.
 
 Run the following command:
-
+```bash
 flake8 --format=html --htmldir=flake-report
+```
