@@ -30,14 +30,13 @@ git clone https://github.com/Mnr04/chess_tournament_manager.git
 ### 2. Create a virtual environment
 
 On windows:
-    python -m venv env
-   Launch : 
-       env\Scripts\activate
+```bash
+python -m venv env
+env\Scripts\activate
 
 On macOs / Linux:
-    python3 -m venv env
-    Launch : 
-       source env/bin/activate
+python3 -m venv env
+source env/bin/activate
 
 ### 3. Install dependencies
 
