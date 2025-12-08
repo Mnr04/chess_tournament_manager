@@ -251,6 +251,13 @@ class Tournament():
         # Transform into dict and save
         tournament_to_finish.save_tournament()
 
+    @classmethod
+    def current_standings(cls, tournament_id):
+        path = Path("data") / "tournament" / tournament_id / "standings.json"
+        players_dicts = JsonManager.load_data(path)
+        players_dicts.sort(key=lambda x: x['score'], reverse=True)
+        return players_dicts
+
 
 class Round:
     def __init__(self, name, start_time, end_time=None, matches=None):

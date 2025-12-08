@@ -376,6 +376,20 @@ class RoundView():
         else:
             return "2"
 
+    def current_standings(players_list, actual_round):
+        print(f"\n--- 🥇 Current Standings round {actual_round} ---")
+        table_data = []
+
+        for i, player in enumerate(players_list):
+            full_name = f"{player['surname']} {player['name']}"
+            score = player['score']
+            rank = i + 1
+
+            table_data.append([rank, full_name, score])
+
+        headers = ["Rank", "Player", "Score"]
+        print(tabulate(table_data, headers=headers, tablefmt="fancy_grid"))
+
 
 class MatchView():
     @staticmethod

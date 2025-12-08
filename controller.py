@@ -4,6 +4,7 @@ from view import (
 )
 from models import Player, Tournament, Round, Match
 import datetime
+import random
 import time
 
 
@@ -422,6 +423,11 @@ class TournamentController():
             if tournament.actual_round == tournament.total_round:
                 break
 
+            # Display current standings
+            current_standings = Tournament.current_standings(tournament.id)
+            RoundView.current_standings(current_standings, tournament.actual_round)
+
+            # Option to continue / stop tournament
             response = RoundView.continue_tournament(tournament.actual_round)
             if response == '2':
                 MainView.clean_console()
@@ -454,6 +460,8 @@ class RoundController:
 
         # Get Player + match history
         players_list = Round.get_round_players_list(tournament.id)
+
+        random.shuffle(players_list)
         s_players_list = sorted(
             players_list, key=lambda p: p.score, reverse=True
             )
