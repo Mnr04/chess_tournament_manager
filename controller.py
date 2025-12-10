@@ -1,6 +1,6 @@
 from view import (
     MainView, PlayersView, TournamentView, MatchView, RoundView,
-    ReportView
+    ReportView, CancelAction
 )
 from models import Player, Tournament, Round, Match
 import datetime
@@ -67,30 +67,35 @@ class PlayersController():
                 self.main_view.error("Error : Wrong input")
 
     def create_player(self):
-        while True:
-            player_data = self.players_view.get_new_player_inputs()
-
-            ine_input = player_data["ine"]
-
-            player_exist = Player.get_player_by_ine(ine_input)
-
-            if player_exist:
-                self.main_view.error(f"🚫 Dupplicate INE {ine_input} found.")
-                self.main_view.error("Please re-start.")
-                continue
-
-            else:
-                break
-
         try:
+            while True:
+                player_data = self.players_view.get_new_player_inputs()
+
+                ine_input = player_data["ine"]
+                player_exist = Player.get_player_by_ine(ine_input)
+
+                if player_exist:
+                    self.main_view.error(f"🚫 Dupplicate INE {ine_input} found.")
+                    self.main_view.error("Please re-start.")
+                    continue
+                else:
+                    break
+
             new_player = Player(**player_data)
             new_player.save_new_player()
+
             self.main_view.success("✅ Player saved successfully!")
             time.sleep(1.5)
             self.main_view.clean_console()
 
+        except CancelAction:
+            MainView.clean_console()
+            print("\n🔙 Creation cancelled. Returning to menu...")
+            time.sleep(1)
+            return
+
         except Exception as e:
-            self.main_view.error(f"Technical error while saving: {e}")
+            MainView.error(f"Error while saving: {e}")
 
     @classmethod
     def select_player(cls):
@@ -108,32 +113,45 @@ class PlayersController():
         if not t_player or t_player == "RETURN":
             time.sleep(1)
             return
+        try:
+            while True:
+                updated_data = self.players_view.update_player_inputs(t_player)
 
-        while True:
-            updated_data = self.players_view.update_player_inputs(t_player)
+                new_ine = updated_data["ine"]
 
-            new_ine = updated_data["ine"]
+                existing_player_ine = Player.get_player_by_ine(new_ine)
 
-            existing_player_ine = Player.get_player_by_ine(new_ine)
+                if existing_player_ine and existing_player_ine.id != t_player.id:
+                    self.main_view.error("Error: INE  is already taken.")
+                    self.main_view.error("Restarting update...")
+                    continue
 
-            if existing_player_ine and existing_player_ine.id != t_player.id:
-                self.main_view.error("Error: INE  is already taken.")
-                self.main_view.error("Restarting update...")
-                continue
+                else:
+                    break
 
-            else:
-                break
+            Player.update_players(t_player.id, updated_data)
+            self.main_view.success(" Player updated successfully!")
+            time.sleep(1)
+            MainView.clean_console()
 
-        Player.update_players(t_player.id, updated_data)
-        self.main_view.success(" Player updated successfully!")
-        time.sleep(1)
-        MainView.clean_console()
+        except CancelAction:
+            MainView.clean_console()
+            print("\n🔙 Update cancelled. Returning to menu...")
+            time.sleep(1)
+            return
+
+        except Exception as e:
+            self.main_view.error(f"Error while updating: {e}")
 
     def view_player(self):
         target_player = self.select_player()
         MainView.clean_console()
 
-        if not target_player:
+        if target_player == "RETURN":
+            MainView.error("🔙 Back to menu")
+            return
+
+        if not target_player :
             MainView.error("No players to display")
             time.sleep(1)
             return
@@ -161,6 +179,10 @@ class PlayersController():
 
     def remove_player(self):
         target_player = self.select_player()
+
+        if target_player == "RETURN":
+            MainView.error("🔙 Back to menu")
+            return
 
         if not target_player:
             time.sleep(1)
@@ -212,43 +234,50 @@ class TournamentController():
             time.sleep(1)
             MainView.clean_console()
             return
-        tournament_data = TournamentView.get_tournament_inputs()
-
-        if tournament_data["start_date"] > tournament_data["end_date"]:
-            MainView.error("Error: Start date cannot be after End date.")
-            return
-
-        s_players = []
-        while True:
-
-            s_players = TournamentView.select_players_to_add(all_players, tournament_data["total_round"])
-
-            if not s_players:
-                choice = input("No players selected. Cancel creation? (y/n): ")
-                if choice.lower() == 'y':
-                    return
-                continue
-
-            # ratio round / players (nb_players = nb_rounds + 1)
-            nb_rounds = tournament_data["total_round"]
-            nb_players = len(s_players)
-
-            if nb_players < nb_rounds + 1:
-                MainView.error(f"min {nb_rounds + 1}.")
-                print("👉 Add more players.")
-                time.sleep(2)
-                continue
-
-            break
-
-        tournament_data["players"] = s_players
-
         try:
+            tournament_data = TournamentView.get_tournament_inputs()
+
+            if tournament_data["start_date"] > tournament_data["end_date"]:
+                MainView.error("Error: Start date cannot be after End date.")
+                return
+
+            s_players = []
+            while True:
+
+                s_players = TournamentView.select_players_to_add(all_players, tournament_data["total_round"])
+
+                if not s_players:
+                    choice = input("No players selected. Cancel creation? (y/n): ")
+                    if choice.lower() == 'y':
+                        return
+                    continue
+
+                # ratio round / players (nb_players = nb_rounds + 1)
+                nb_rounds = tournament_data["total_round"]
+                nb_players = len(s_players)
+
+                if nb_players < nb_rounds + 1:
+                    MainView.error(f"min {nb_rounds + 1}.")
+                    MainView.error("👉 Add more players.")
+                    time.sleep(2)
+                    continue
+
+                break
+
+            tournament_data["players"] = s_players
+
+
             new_tournament = Tournament(**tournament_data)
             new_tournament.save_tournament()
             MainView.success(f"Tournament '{tournament_data['name']}' created")
             time.sleep(1.5)
             MainView.clean_console()
+
+        except CancelAction:
+            MainView.clean_console()
+            print("\n🔙 Creation cancelled. Returning to menu...")
+            time.sleep(1)
+            return
 
         except Exception as e:
             MainView.error(f"Error while saving: {e}")
@@ -262,29 +291,38 @@ class TournamentController():
         if not tournament or tournament == "None":
             return
 
-        update_info = TournamentView.update_tournament_inputs(tournament)
-        if update_info["start_date"] > update_info["end_date"]:
-            MainView.error("Invalid date")
-            return
-
-        players = self.manage_tournament_players(tournament.players)
-
-        new_total_rounds = update_info["total_round"]
-        new_total_players = len(players)
-
-        if new_total_players < new_total_rounds + 1:
-            MainView.clean_console()
-            MainView.error("🚫 UPDATE ERROR")
-            MainView.error("Min {new_total_rounds + 1} players")
-            MainView.error("Restart")
-            time.sleep(3)
-            return
-
         try:
+
+            update_info = TournamentView.update_tournament_inputs(tournament)
+            if update_info["start_date"] > update_info["end_date"]:
+                MainView.error("Invalid date")
+                return
+
+            players = self.manage_tournament_players(tournament.players)
+
+            new_total_rounds = update_info["total_round"]
+            new_total_players = len(players)
+
+            if new_total_players < new_total_rounds + 1:
+                MainView.clean_console()
+                MainView.error("🚫 UPDATE ERROR")
+                MainView.error("Min {new_total_rounds + 1} players")
+                MainView.error("Restart")
+                time.sleep(3)
+                return
+
+
             Tournament.update_tournament(tournament.id, update_info, players)
             MainView.success("Tournament updated successfully!")
             time.sleep(1.5)
             MainView.clean_console()
+
+        except CancelAction:
+            MainView.clean_console()
+            MainView.error("\n🔙 Update cancelled. Returning to menu...")
+            time.sleep(1)
+            return
+
         except Exception as e:
             MainView.error(f"Error: {e}")
 

@@ -9,6 +9,8 @@ from rich.text import Text
 
 console = Console()
 
+class CancelAction(Exception):
+    pass
 
 class MainView:
     @staticmethod
@@ -487,14 +489,22 @@ class ReportView:
 class InputView:
 
     @staticmethod
+    def check_cancel(user_input):
+        if user_input.strip().lower() == "return":
+            raise CancelAction()
+
+    @staticmethod
     def get_valid_date(prompt, default=None):
+        full_prompt = f"{prompt} ('return' to cancel): "
+
         while True:
-            date_str = input(prompt).strip()
+            date_str = input(full_prompt).strip()
+
+            InputView.check_cancel(date_str)
 
             if not date_str:
                 if default is not None:
                     return default
-
                 print("Error: This field cannot be empty.")
                 continue
 
@@ -506,8 +516,13 @@ class InputView:
 
     @staticmethod
     def get_valid_int(prompt, default=None):
+        full_prompt = f"{prompt} ('return' to cancel): "
+
         while True:
-            value = input(prompt)
+            value = input(full_prompt).strip()
+
+            InputView.check_cancel(value)
+
             if not value:
                 return default
             try:
@@ -517,12 +532,16 @@ class InputView:
 
     @staticmethod
     def get_valid_name(prompt, default=None):
+        full_prompt = f"{prompt} ('return' to cancel): "
+
         while True:
-            user_input = input(prompt).strip()
+            user_input = input(full_prompt).strip()
+
+            InputView.check_cancel(user_input)
+
             if not user_input:
                 if default is not None:
                     return default
-
                 print("Error: This field cannot be empty.")
                 continue
 
@@ -533,8 +552,15 @@ class InputView:
 
     @staticmethod
     def get_valid_ine(prompt, default=None):
+        full_prompt = f"{prompt} ('return' to cancel): "
+
         while True:
-            ine_input = input(prompt).strip().upper()
+            raw_input = input(full_prompt).strip()
+
+            InputView.check_cancel(raw_input)
+
+            ine_input = raw_input.upper()
+
             if not ine_input:
                 if default is not None:
                     return default
