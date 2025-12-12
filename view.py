@@ -142,11 +142,10 @@ class PlayersView():
     def display_player_info(player):
         print(f"\n--- PLAYER DETAILS ---")
         data = [
-            ["ID", player.id],
+            ["INE", player.ine],
             ["Last Name", player.surname],
             ["First Name", player.name],
-            ["Birth Date", player.birth_date],
-            ["INE", player.ine]
+            ["Birth Date", player.birth_date]
         ]
         print(tabulate(data, tablefmt="fancy_grid"))
 
@@ -258,7 +257,6 @@ class TournamentView():
         self.main_view.clean_console()
         print("\n--- TOURNAMENT DETAILS ---")
 
-        # Tabulate for general data
         general_data = [
             ["Name", tournament.name],
             ["City", tournament.city],
@@ -294,7 +292,7 @@ class TournamentView():
         else:
             headers = ["Name", "Surname", "ID"]
 
-            players = [[p.name, p.surname, p.id] for p in tournament.players]
+            players = [[p.name, p.surname, p.ine] for p in tournament.players]
 
             print(tabulate(players, headers=headers, tablefmt="fancy_grid"))
 

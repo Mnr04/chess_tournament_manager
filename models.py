@@ -153,7 +153,6 @@ class Tournament():
     def save_tournament(self):
         # Transform Data
         tournament_data = self.to_dict()
-        # Save with JsonManager
         JsonManager.save_data(
             self.get_file_path(tournament_data['id']), tournament_data
         )
@@ -209,7 +208,6 @@ class Tournament():
 
         tournament.players = players_data_list
 
-        # Save
         tournament.save_tournament()
 
     @classmethod

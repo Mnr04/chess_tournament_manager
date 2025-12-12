@@ -265,7 +265,6 @@ class TournamentController():
             self.main_view.error(f"Error while saving: {e}")
 
     def update_tournament(self):
-        # Select a tournament
         tournament = self.select_tournament(
             filter_condition=lambda t: t.current_round == 0
             )
@@ -280,7 +279,7 @@ class TournamentController():
                 self.main_view.error("Invalid date")
                 return
 
-            players = self.manage_tournament_players(tournament.players)
+            players = self.manage_tournament_players(tournament.players, tournament.total_round)
 
             new_total_rounds = update_info["total_round"]
             new_total_players = len(players)
@@ -384,7 +383,7 @@ class TournamentController():
 
         return self.view.select_tournament(tournaments_to_display)
 
-    def manage_tournament_players(self, actual_players):
+    def manage_tournament_players(self, actual_players, total_round):
         self.main_view.clean_console()
 
         all_players = Player.get_all_players()
@@ -394,7 +393,6 @@ class TournamentController():
             self.view.print_players_table(actual_players)
             action = self.view.display_manage_menu()
 
-            # --- ADD PLAYERS  ---
             if action == "add":
 
                 current_ids = {p.id for p in actual_players}
@@ -402,7 +400,7 @@ class TournamentController():
                     p for p in all_players if p.id not in current_ids
                     ]
 
-                new_players = self.view.select_players_to_add(candidates)
+                new_players = self.view.select_players_to_add(candidates, total_round)
 
                 if new_players:
                     actual_players.extend(new_players)
@@ -415,8 +413,8 @@ class TournamentController():
                 self.main_view.clean_console()
 
             elif action == "confirm":
-                if len(actual_players) < 2:
-                    self.main_view.error("⚠️ Need at least 2 players.")
+                if len(actual_players) < total_round + 1:
+                    self.main_view.error(f"⚠️ Need at least {total_round + 1} players.")
                     continue
                 return actual_players
 
