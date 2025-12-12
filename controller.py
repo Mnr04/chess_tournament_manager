@@ -5,7 +5,7 @@ from view import (
 from models import Player, Tournament, Round, Match
 import datetime
 import random
-import time
+
 
 
 class MainController:
@@ -45,7 +45,7 @@ class PlayersController():
 
     def players_sub_menu(self):
         while True:
-            MainView.clean_console()
+            self.main_view.clean_console()
             response = self.players_view.display_players_sub_menu()
 
             menu_choice = {
@@ -75,7 +75,7 @@ class PlayersController():
                 player_exist = Player.get_player_by_ine(ine_input)
 
                 if player_exist:
-                    self.main_view.error(f"🚫 Dupplicate INE {ine_input} found.")
+                    self.main_view.error(f"🚫 Duplicate INE {ine_input} found.")
                     self.main_view.error("Please re-start.")
                     continue
                 else:
@@ -84,25 +84,20 @@ class PlayersController():
             new_player = Player(**player_data)
             new_player.save_new_player()
 
-            self.main_view.success("✅ Player saved successfully!")
-            time.sleep(1.5)
-            self.main_view.clean_console()
+            self.main_view.display_success_and_refresh("✅ Player saved successfully!")
 
         except CancelAction:
-            MainView.clean_console()
-            print("\n🔙 Creation cancelled. Returning to menu...")
-            time.sleep(1)
+            self.main_view.display_success_and_refresh("\n🔙 Creation cancelled. Returning to menu...")
             return
 
         except Exception as e:
-            MainView.error(f"Error while saving: {e}")
+            self.main_view.error(f"Error while saving: {e}")
 
-    @classmethod
-    def select_player(cls):
+    def select_player(self):
         all_players = Player.get_all_players()
 
         if not all_players:
-            MainView.error("❌ No players registered.")
+            self.main_view.error("❌ No players registered.")
             return None
 
         return PlayersView.select_player(all_players)
@@ -111,7 +106,7 @@ class PlayersController():
         t_player = self.select_player()
 
         if not t_player or t_player == "RETURN":
-            time.sleep(1)
+            self.main_view.prompt_continue()
             return
         try:
             while True:
@@ -130,14 +125,10 @@ class PlayersController():
                     break
 
             Player.update_players(t_player.id, updated_data)
-            self.main_view.success(" Player updated successfully!")
-            time.sleep(1)
-            MainView.clean_console()
+            self.main_view.display_success_and_refresh("Player updated successfully!")
 
         except CancelAction:
-            MainView.clean_console()
-            print("\n🔙 Update cancelled. Returning to menu...")
-            time.sleep(1)
+            self.main_view.display_success_and_refresh("\n🔙 Update cancelled. Returning to menu...")
             return
 
         except Exception as e:
@@ -145,24 +136,20 @@ class PlayersController():
 
     def view_player(self):
         target_player = self.select_player()
-        MainView.clean_console()
+        self.main_view.clean_console()
 
         if target_player == "RETURN":
-            MainView.error("🔙 Back to menu")
+            self.main_view.error("🔙 Back to menu")
             return
 
         if not target_player :
-            MainView.error("No players to display")
-            time.sleep(1)
+            self.display_success_and_refresh("No players to display")
             return
 
-        # Get info from model -->  database
         player_info = Player.get_players_by_id(target_player.id)
-        # Case where player doesn't exist
         if not player_info:
             return
 
-        # Display player data
         self.players_view.display_player_info(player_info)
 
     def view_all_player(self):
@@ -172,8 +159,8 @@ class PlayersController():
         p_sorted = sorted(p_sorted, key=lambda x: x.surname, reverse=False)
         # Display all players infos
         if p_sorted == []:
-            MainView.error("No players to display")
-            time.sleep(1)
+            self.main_view.error("No players to display")
+            self.main_view.prompt_continue()
             return
         self.players_view.display_all_players(p_sorted)
 
@@ -181,33 +168,32 @@ class PlayersController():
         target_player = self.select_player()
 
         if target_player == "RETURN":
-            MainView.error("🔙 Back to menu")
+            self.main_view.error("🔙 Back to menu")
             return
 
         if not target_player:
-            time.sleep(1)
+            self.main_view.prompt_continue()
             return
 
-        # Get info from model -->  database
         player_info = Player.get_players_by_id(target_player.id)
 
-        # Case where player doesn't exist
         if not player_info:
             self.main_view.error("Player not found!")
             return
         else:
-            # remove player from database
             Player.delete_player(player_info.id)
-            self.main_view.success("player delete successfully !")
-            time.sleep(1)
-            MainView.clean_console()
+            self.main_view.display_success_and_refresh("Player deleted successfully!")
 
 
 class TournamentController():
+    def __init__(self):
+        self.main_view = MainView()
+        self.view = TournamentView()
+
     def tournament_sub_menu(self):
-        MainView.clean_console()
+        self.main_view.clean_console()
         while True:
-            response = TournamentView.display_tournaments_sub_menu()
+            response = self.view.display_tournaments_sub_menu()
             menu_choice = {
                 "1": self.create_tournament,
                 "2": self.launch_tournament,
@@ -225,26 +211,26 @@ class TournamentController():
                 break
 
             else:
-                MainView.error("Error : Wrong input")
+                self.main_view.error("Error : Wrong input")
 
     def create_tournament(self):
         all_players = Player.get_all_players()
         if len(all_players) < 2:
-            MainView.error("Register at least 2 players first.")
-            time.sleep(1)
-            MainView.clean_console()
+            self.main_view.error("Register at least 2 players first.")
+            self.main_view.prompt_continue()
+            self.main_view.clean_console()
             return
         try:
-            tournament_data = TournamentView.get_tournament_inputs()
+            tournament_data = self.view.get_tournament_inputs()
 
             if tournament_data["start_date"] > tournament_data["end_date"]:
-                MainView.error("Error: Start date cannot be after End date.")
+                self.main_view.error("Error: Start date cannot be after End date.")
                 return
 
             s_players = []
             while True:
 
-                s_players = TournamentView.select_players_to_add(all_players, tournament_data["total_round"])
+                s_players = self.view.select_players_to_add(all_players, tournament_data["total_round"])
 
                 if not s_players:
                     choice = input("No players selected. Cancel creation? (y/n): ")
@@ -257,9 +243,9 @@ class TournamentController():
                 nb_players = len(s_players)
 
                 if nb_players < nb_rounds + 1:
-                    MainView.error(f"min {nb_rounds + 1}.")
-                    MainView.error("👉 Add more players.")
-                    time.sleep(2)
+                    self.main_view.error(f"min {nb_rounds + 1}.")
+                    self.main_view.error("👉 Add more players.")
+                    self.main_view.prompt_continue()
                     continue
 
                 break
@@ -269,18 +255,14 @@ class TournamentController():
 
             new_tournament = Tournament(**tournament_data)
             new_tournament.save_tournament()
-            MainView.success(f"Tournament '{tournament_data['name']}' created")
-            time.sleep(1.5)
-            MainView.clean_console()
+            self.main_view.display_success_and_refresh(f"Tournament '{tournament_data['name']}' created")
 
         except CancelAction:
-            MainView.clean_console()
-            print("\n🔙 Creation cancelled. Returning to menu...")
-            time.sleep(1)
+            self.main_view.display_success_and_refresh("\n🔙 Creation cancelled. Returning to menu...")
             return
 
         except Exception as e:
-            MainView.error(f"Error while saving: {e}")
+            self.main_view.error(f"Error while saving: {e}")
 
     def update_tournament(self):
         # Select a tournament
@@ -293,9 +275,9 @@ class TournamentController():
 
         try:
 
-            update_info = TournamentView.update_tournament_inputs(tournament)
+            update_info = self.view.update_tournament_inputs(tournament)
             if update_info["start_date"] > update_info["end_date"]:
-                MainView.error("Invalid date")
+                self.main_view.error("Invalid date")
                 return
 
             players = self.manage_tournament_players(tournament.players)
@@ -304,33 +286,30 @@ class TournamentController():
             new_total_players = len(players)
 
             if new_total_players < new_total_rounds + 1:
-                MainView.clean_console()
-                MainView.error("🚫 UPDATE ERROR")
-                MainView.error("Min {new_total_rounds + 1} players")
-                MainView.error("Restart")
-                time.sleep(3)
+                self.main_view.clean_console()
+                self.main_view.error("🚫 UPDATE ERROR")
+                self.main_view.error("Min {new_total_rounds + 1} players")
+                self.main_view.error("Restart")
+                self.main_view.prompt_continue()
                 return
 
 
             Tournament.update_tournament(tournament.id, update_info, players)
-            MainView.success("Tournament updated successfully!")
-            time.sleep(1.5)
-            MainView.clean_console()
+            self.main_view.display_success_and_refresh("Tournament updated successfully!")
+
 
         except CancelAction:
-            MainView.clean_console()
-            MainView.error("\n🔙 Update cancelled. Returning to menu...")
-            time.sleep(1)
+            self.main_view.display_success_and_refresh  ("\n🔙 Update cancelled. Returning to menu...")
             return
 
         except Exception as e:
-            MainView.error(f"Error: {e}")
+            self.main_view.error(f"Error: {e}")
 
     def view_tournament(self):
 
-        target_tournament = TournamentController.select_tournament()
+        target_tournament = self.select_tournament()
         if not target_tournament:
-            MainView.error("No Tournament!")
+            self.main_view.error("No Tournament!")
             return
         elif target_tournament == "None":
             return
@@ -348,24 +327,22 @@ class TournamentController():
 
         target_tournament.players = player_list
 
-        MainView.clean_console()
-        TournamentView.display_tournament_info(target_tournament, current_standings)
+        self.main_view.clean_console()
+        self.view.display_tournament_info(target_tournament, current_standings)
         return target_tournament
 
     def view_all_tournaments(self):
-        all_tournaments = Tournament.get_all_tournements()
-        MainView.clean_console()
-        TournamentView.display_all_tournament(all_tournaments)
+        all_tournaments = Tournament.get_all_tournaments()
+        self.main_view.clean_console()
+        self.view.display_all_tournament(all_tournaments)
 
     def remove_tournament(self):
-        tournament_target = TournamentController.select_tournament()
+        tournament_target = self.select_tournament()
         if not tournament_target:
-            MainView.error("Tournament not find")
+            self.main_view.error("Tournament not find")
 
-        MainView.success(f"{tournament_target.name} successfully delete")
-        time.sleep(1.5)
+        self.main_view.display_success_and_refresh(f"{tournament_target.name} successfully deleted")
         Tournament.delete_tournament(tournament_target.id)
-        MainView.clean_console()
 
     def get_players_list(self, number_of_players):
         all_players = Player.get_all_players()
@@ -377,7 +354,7 @@ class TournamentController():
             candidates = [p for p in all_players if p not in selected_players]
 
             if not candidates:
-                MainView.error("Not enough players in database!")
+                self.main_view.error("Not enough players in database!")
                 break
 
             new_player = PlayersView.select_player(candidates)
@@ -386,14 +363,13 @@ class TournamentController():
                 break
 
             selected_players.append(new_player)
-            MainView.success(f"{new_player.name} added")
+            self.main_view.success(f"{new_player.name} added")
 
         return selected_players
 
-    @classmethod
-    def select_tournament(cls, filter_condition=None):
+    def select_tournament(self, filter_condition=None):
         # Get all tournament
-        all_tournaments = Tournament.get_all_tournements()
+        all_tournaments = Tournament.get_all_tournaments()
 
         if filter_condition:
             tournaments_to_display = [
@@ -402,22 +378,21 @@ class TournamentController():
             tournaments_to_display = all_tournaments
 
         if len(tournaments_to_display) == 0:
-            MainView.error("No tournament to display.")
-            time.sleep(1)
-            MainView.clean_console()
+            self.main_view.display_success_and_refresh("No tournament to display.")
+
             return None
 
-        return TournamentView.select_tournament(tournaments_to_display)
+        return self.view.select_tournament(tournaments_to_display)
 
     def manage_tournament_players(self, actual_players):
-        MainView.clean_console()
+        self.main_view.clean_console()
 
         all_players = Player.get_all_players()
 
         while True:
             print(f"\n--- 👥 CURRENT PLAYERS ({len(actual_players)}) ---")
-            TournamentView.print_players_table(actual_players)
-            action = TournamentView.display_manage_menu()
+            self.view.print_players_table(actual_players)
+            action = self.view.display_manage_menu()
 
             # --- ADD PLAYERS  ---
             if action == "add":
@@ -427,30 +402,29 @@ class TournamentController():
                     p for p in all_players if p.id not in current_ids
                     ]
 
-                new_players = TournamentView.select_players_to_add(candidates)
+                new_players = self.view.select_players_to_add(candidates)
 
                 if new_players:
                     actual_players.extend(new_players)
-                    MainView.success(f"{len(new_players)} players added!")
+                    self.main_view.success(f"{len(new_players)} players added!")
 
-                MainView.clean_console()
+                self.main_view.clean_console()
 
             elif action == "remove":
                 actual_players = self.remove_tournament_player(actual_players)
-                MainView.clean_console()
+                self.main_view.clean_console()
 
             elif action == "confirm":
                 if len(actual_players) < 2:
-                    MainView.error("⚠️ Need at least 2 players.")
+                    self.main_view.error("⚠️ Need at least 2 players.")
                     continue
                 return actual_players
 
             elif action == "back":
                 return actual_players
 
-    @classmethod
-    def remove_tournament_player(cls, players_data):
-        players_to_remove = TournamentView.get_players_to_delete(players_data)
+    def remove_tournament_player(self, players_data):
+        players_to_remove = self.view.get_players_to_delete(players_data)
 
         if not players_to_remove:
             print("❌ No changes made.")
@@ -459,14 +433,14 @@ class TournamentController():
         for player in players_to_remove:
             if player in players_data:
                 players_data.remove(player)
-                MainView.success(f"Player {player.surname} deleted.")
+                self.main_view.success(f"Player {player.surname} deleted.")
 
         return players_data
 
     def launch_tournament(self):
-        MainView.clean_console()
+        self.main_view.clean_console()
         # Select Tournament objects
-        tournament = TournamentController.select_tournament(
+        tournament = self.select_tournament(
             filter_condition=lambda x: x.finish is False
             )
         # choice return value="None"
@@ -489,12 +463,12 @@ class TournamentController():
             # Option to continue / stop tournament
             response = RoundView.continue_tournament(tournament.current_round)
             if response == '2':
-                MainView.clean_console()
+                self.main_view.clean_console()
                 break
 
         if tournament.current_round == tournament.total_round:
             Tournament.finish_tournament(tournament.id)
-            MainView.success('Tournament Finished')
+            self.main_view.success('Tournament Finished')
 
     @staticmethod
     def has_already_played(p1_id, p2_id, match_history):
@@ -538,7 +512,8 @@ class RoundController:
             )
 
         if not round_finished:
-            print("Round not finish")
+            view = MainView()
+            view.error("Round not finished")
             tournament.current_round -= 1
             return
 
@@ -617,9 +592,8 @@ class MatchController:
             print("\n Error ")
             return False
 
-        MainView.success("All match are finished")
-        time.sleep(1.5)
-        MainView.clean_console()
+        view = MainView()
+        view.display_success_and_refresh("All matches are finished")
 
         # Update standing
         for item in score_list:
@@ -646,12 +620,13 @@ class ReportController:
     def __init__(self):
         self.players_controller = PlayersController()
         self.tournament_controller = TournamentController()
+        self.report_view = ReportView()
         self.main_view = MainView()
 
     def report_sub_menu(self):
         while True:
-            MainView.clean_console()
-            response = ReportView.display_report_sub_menu()
+            self.main_view.clean_console()
+            response = self.report_view.display_report_sub_menu()
 
             menu_choice = {
                 "1": self.players_controller.view_all_player,
@@ -672,9 +647,9 @@ class ReportController:
                 self.main_view.error("Error : Wrong input")
 
     def tournament_player_list(self):
-        MainView.clean_console()
+        self.main_view.clean_console()
 
-        target_tournament = TournamentController.select_tournament()
+        target_tournament = self.tournament_controller.select_tournament()
         if not target_tournament:
             return
 
@@ -684,14 +659,14 @@ class ReportController:
 
         player_list_dicts = [p.to_dict() for p in player_list_sorted]
 
-        ReportView.display_players_in_tournament(
+        self.report_view.display_players_in_tournament(
             target_tournament.name, player_list_dicts
             )
 
     def tournament_summary(self):
-        MainView.clean_console()
+        self.main_view.clean_console()
 
-        target_tournament = TournamentController.select_tournament(
+        target_tournament = self.tournament_controller.select_tournament(
             filter_condition=lambda x: x.finish
             )
         if not target_tournament:
@@ -729,4 +704,4 @@ class ReportController:
                 "matches": formatted_matches
             })
 
-        ReportView.display_round_matches(clean_rounds_data)
+        self.report_view.display_round_matches(clean_rounds_data)

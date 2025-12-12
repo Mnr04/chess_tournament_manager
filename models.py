@@ -1,9 +1,9 @@
 import uuid
 import shutil
 import random
+import os
 from database import JsonManager
 from pathlib import Path
-import os
 
 
 class Player():
@@ -171,7 +171,7 @@ class Tournament():
             return tournaments_list
 
         except FileNotFoundError:
-            print("Folder don't exist")
+            print("Folder doesn't exist")
             return []
 
     @classmethod
@@ -180,7 +180,7 @@ class Tournament():
         return cls.from_dict(data)
 
     @classmethod
-    def get_all_tournements(cls):
+    def get_all_tournaments(cls):
         all_tournament_data_dict = []
         # Get all the tournament Id
         tournaments_name_list = Tournament.get_tournaments_id_list()

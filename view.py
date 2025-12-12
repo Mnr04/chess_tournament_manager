@@ -10,33 +10,31 @@ class CancelAction(Exception):
 
 
 class MainView:
-    @staticmethod
-    def welcome_message():
+
+    def welcome_message(self):
         print("\n" + "*" * 30)
         print("CHESS MANAGER".center(30))
         print("*" * 30 + "\n")
 
-    @staticmethod
-    def finish_message():
-        print("--- À la prochaine ! ---")
+    def finish_message(self):
+        print("--- See you soon! ---")
 
-    @staticmethod
-    def error(message):
-        print(f"\n❌ ERREUR : {message}")
+    def error(self, message):
+        print(f"\n❌ ERROR : {message}")
 
-    @staticmethod
-    def success(message):
-        print(f"\n✅ SUCCÈS : {message}")
+    def success(self, message):
+        print(f"\n✅ SUCCESS : {message}")
 
-    @staticmethod
-    def clean_console():
+    def clean_console(self):
         if os.name == 'nt':
             os.system('cls')
         else:
             os.system('clear')
 
-    @staticmethod
-    def display_menu():
+    def prompt_continue(self):
+        input("\nPress Enter to continue...")
+
+    def display_menu(self):
         choice = questionary.select(
             "Main Menu - Select an option:",
             choices=[
@@ -44,27 +42,36 @@ class MainView:
                 Choice("Tournament Management", value="2"),
                 Choice("Reports", value="3"),
                 Separator(),
-                Choice("Quit", value="4")
+                Choice("Exit", value="4")
             ]
         ).ask()
         return choice
+
+    def display_success_and_refresh(self, message):
+        self.success(message)
+        self.prompt_continue()
+        self.clean_console()
 
 
 class PlayersView():
 
     @staticmethod
     def display_players_sub_menu():
+        print("\n--- PLAYERS MENU ---")
+
+        menu_choices = [
+            Choice("Create new player", value="1"),
+            Choice("Update player info", value="2"),
+            Choice("Display player details", value="3"),
+            Choice("Display all players", value="4"),
+            Choice("Delete player", value="5"),
+            Separator(),
+            Choice("Return to main menu", value="6")
+        ]
+
         response = questionary.select(
-            "Players Menu - Select an option:",
-            choices=[
-                Choice("Create Player 👤", value="1"),
-                Choice("Update Player 🛠️", value="2"),
-                Choice("View Player 👁️", value="3"),
-                Choice("View All Players 📋", value="4"),
-                Choice("Remove Player 🗑️", value="5"),
-                questionary.Separator(),
-                Choice("Return 🔙", value="6")
-            ]
+            "What do you want to do?",
+            choices=menu_choices
         ).ask()
 
         return response
@@ -133,20 +140,17 @@ class PlayersView():
 
     @staticmethod
     def display_player_info(player):
-        content = Text()
-        content.append(f"🆔 ID: {player.id}\n")
-        content.append(f"👤 Name: {player.surname.upper()} {player.name}\n")
-        content.append(f"🎂 Birth Date: {player.birth_date}\n")
-        content.append(f"📜 INE: {player.ine}")
+        print(f"\n--- PLAYER DETAILS ---")
+        data = [
+            ["ID", player.id],
+            ["Last Name", player.surname],
+            ["First Name", player.name],
+            ["Birth Date", player.birth_date],
+            ["INE", player.ine]
+        ]
+        print(tabulate(data, tablefmt="fancy_grid"))
 
-        console.print(Panel(
-            content,
-            title="Player Info",
-            expand=False,
-            border_style="blue"
-        ))
-
-        questionary.press_any_key_to_continue().ask()
+        input("\nPress Enter to return...")
 
     @staticmethod
     def display_all_players(all_players):
@@ -158,27 +162,31 @@ class PlayersView():
 
 
 class TournamentView():
+    def __init__(self):
+        self.main_view = MainView()
 
-    @staticmethod
-    def display_tournaments_sub_menu():
+    def display_tournaments_sub_menu(self):
+        print("\n--- TOURNAMENTS MENU ---")
+
+        menu_choices = [
+            Choice("Create new tournament", value="1"),
+            Choice("Start or continue tournament", value="2"),
+            Choice("Update tournament info", value="3"),
+            Choice("Display tournament details", value="4"),
+            Choice("Display all tournaments", value="5"),
+            Choice("Delete tournament", value="6"),
+            questionary.Separator(),
+            Choice("Return to main menu", value="7")
+        ]
+
         response = questionary.select(
-            "Tournaments Menu - Select an option:",
-            choices=[
-                Choice("Create Tournament ➕", value="1"),
-                Choice("Start / Continue Tournament 🚀", value="2"),
-                Choice("Update Tournament 🛠️", value="3"),
-                Choice("View Tournament Detail 👁️", value="4"),
-                Choice("View All Tournaments 📋", value="5"),
-                Choice("Remove Tournament 🗑️", value="6"),
-                questionary.Separator(),
-                Choice("Return 🔙", value="7")
-            ]
+            "What do you want to do?",
+            choices=menu_choices
         ).ask()
 
         return response
 
-    @staticmethod
-    def get_tournament_inputs():
+    def get_tournament_inputs(self):
         print("\n--- Create a new tournament ---")
 
         name = InputView.get_valid_name("Tournament Name: ")
@@ -197,8 +205,7 @@ class TournamentView():
             "end_date": end_date
         }
 
-    @staticmethod
-    def update_tournament_inputs(tournament):
+    def update_tournament_inputs(self, tournament):
         print(f"\n--- Update Tournament {tournament.name} ---")
 
         name = InputView.get_valid_name(
@@ -240,17 +247,15 @@ class TournamentView():
             "end_date": end_date
         }
 
-    @staticmethod
-    def print_players_table(players_list):
+    def print_players_table(self, players_list):
         if not players_list:
             print("   🚫 No players registered yet.")
         else:
             table_data = [player.to_dict() for player in players_list]
             print(tabulate(table_data, headers="keys", tablefmt="fancy_grid"))
 
-    @staticmethod
-    def display_tournament_info(tournament, standings=None):
-        MainView.clean_console()
+    def display_tournament_info(self, tournament, standings=None):
+        self.main_view.clean_console()
         print("\n--- TOURNAMENT DETAILS ---")
 
         # Tabulate for general data
@@ -294,11 +299,10 @@ class TournamentView():
             print(tabulate(players, headers=headers, tablefmt="fancy_grid"))
 
         input("\nPress Enter to return...")
-        MainView.clean_console()
+        self.main_view.clean_console()
 
-    @staticmethod
-    def display_all_tournament(all_tournaments):
-        MainView.clean_console()
+    def display_all_tournament(self, all_tournaments):
+        self.main_view.clean_console()
         table_data = [
             {
                 "ID": data.id,
@@ -312,10 +316,9 @@ class TournamentView():
         print(tabulate(table_data, headers="keys", tablefmt="fancy_grid"))
 
         input("Press any button to return")
-        MainView.clean_console()
+        self.main_view.clean_console()
 
-    @staticmethod
-    def select_tournament(all_tournaments):
+    def select_tournament(self, all_tournaments):
         choices = []
 
         for tournament in all_tournaments:
@@ -334,8 +337,7 @@ class TournamentView():
             choices=choices
         ).ask()
 
-    @staticmethod
-    def get_players_to_delete(players_list):
+    def get_players_to_delete(self, players_list):
         if not players_list:
             print("⚠️ List is empty.")
             return []
@@ -351,18 +353,25 @@ class TournamentView():
             instruction="(Space to select, Enter to confirm)"
         ).ask()
 
-    def display_manage_menu():
-        return questionary.select(
-            "Manage Players:",
-            choices=[
-                Choice("➕ Add Players", value="add"),
-                Choice("➖ Remove Players", value="remove"),
-                Choice("✅ Confirm & Start", value="confirm"),
-                Choice("🔙 Back", value="back")
-            ],
+    def display_manage_menu(self):
+        print("\n--- MANAGE TOURNAMENT PLAYERS ---")
+
+        menu_choices = [
+            Choice("Add players", value="add"),
+            Choice("Remove players", value="remove"),
+            Separator(),
+            Choice("Confirm & Start", value="confirm"),
+            Choice("Return", value="back")
+        ]
+
+        response = questionary.select(
+            "What do you want to do?",
+            choices=menu_choices
         ).ask()
 
-    def select_players_to_add(available_players, total_round):
+        return response
+
+    def select_players_to_add(self, available_players, total_round):
         if not available_players:
             print("⚠️ No more players available to add.")
             return []
@@ -425,7 +434,7 @@ class MatchView():
             return 1.0, 0.0
 
         # Standard Match
-        print(f"\n--- ⚔️  MATCH: {player1['name']} vs {player2['name']} ---")
+        print(f"\n---  MATCH: {player1['name']} vs {player2['name']} ---")
 
         choices = [
             f"{player1['name']} wins",
@@ -447,31 +456,33 @@ class MatchView():
 
 
 class ReportView:
-    @staticmethod
-    def display_report_sub_menu():
+    def display_report_sub_menu(self):
+        print("\n--- REPORTS MENU ---")
+
+        report_choices = [
+            Choice("List all players (alphabetical order)", value="1"),
+            Choice("List all tournaments", value="2"),
+            Choice("Display tournament details", value="3"),
+            Choice("Display players in a specific tournament", value="4"),
+            Choice("Display rounds and matches", value="5"),
+            questionary.Separator(),
+            Choice("Return to main menu", value="6")
+        ]
+
         response = questionary.select(
-            "Reports Menu - Select an option:",
-            choices=[
-                Choice("List of all players 👥", value="1"),
-                Choice("List of all tournaments 🏆", value="2"),
-                Choice("Tournament Details  📅", value="3"),
-                Choice("Tournament Players  ♟️", value="4"),
-                Choice("Tournament Rounds & Matches ⚔️", value="5"),
-                questionary.Separator(),
-                Choice("Return to Main Menu 🔙", value="6")
-            ]
+            "What do you want to view?",
+            choices=report_choices
         ).ask()
 
         return response
 
-    def display_players_in_tournament(tournament_name, player_list):
-        print(f"Players list for {tournament_name} Tournament 🏆")
-        print(tabulate(player_list, headers="keys", tablefmt="fancy_grid"))
+    def display_players_in_tournament(self, tournament_name, player_list):
+            print(f"Players list for {tournament_name} Tournament ")
+            print(tabulate(player_list, headers="keys", tablefmt="fancy_grid"))
+            input("Press any button to return")
 
-        input("Press any button to return")
 
-    @staticmethod
-    def display_round_matches(clean_rounds_data):
+    def display_round_matches(self, clean_rounds_data):
         header = ["Player 1", "Pts", "", "Pts", "Player 2"]
 
         for round_info in clean_rounds_data:
@@ -568,4 +579,4 @@ class InputView:
             elif re.match(r"^[A-Z]{2}[0-9]{5}$", ine_input):
                 return ine_input
             else:
-                print("Invalid Format exemple : AB12345 ")
+                print("Invalid format. Example: AB12345")
