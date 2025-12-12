@@ -5,6 +5,7 @@ import questionary
 import os
 from questionary import Choice, Separator
 
+
 class CancelAction(Exception):
     pass
 
@@ -140,7 +141,7 @@ class PlayersView():
 
     @staticmethod
     def display_player_info(player):
-        print(f"\n--- PLAYER DETAILS ---")
+        print("\n--- PLAYER DETAILS ---")
         data = [
             ["INE", player.ine],
             ["Last Name", player.surname],
@@ -475,10 +476,9 @@ class ReportView:
         return response
 
     def display_players_in_tournament(self, tournament_name, player_list):
-            print(f"Players list for {tournament_name} Tournament ")
-            print(tabulate(player_list, headers="keys", tablefmt="fancy_grid"))
-            input("Press any button to return")
-
+        print(f"Players list for {tournament_name} Tournament ")
+        print(tabulate(player_list, headers="keys", tablefmt="fancy_grid"))
+        input("Press any button to return")
 
     def display_round_matches(self, clean_rounds_data):
         header = ["Player 1", "Pts", "", "Pts", "Player 2"]

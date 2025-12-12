@@ -170,7 +170,6 @@ class Tournament():
             return tournaments_list
 
         except FileNotFoundError:
-            print("Folder doesn't exist")
             return []
 
     @classmethod

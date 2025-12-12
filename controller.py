@@ -7,7 +7,6 @@ import datetime
 import random
 
 
-
 class MainController:
     def __init__(self):
         self.view = MainView()
@@ -142,7 +141,7 @@ class PlayersController():
             self.main_view.error("🔙 Back to menu")
             return
 
-        if not target_player :
+        if not target_player:
             self.display_success_and_refresh("No players to display")
             return
 
@@ -252,7 +251,6 @@ class TournamentController():
 
             tournament_data["players"] = s_players
 
-
             new_tournament = Tournament(**tournament_data)
             new_tournament.save_tournament()
             self.main_view.display_success_and_refresh(f"Tournament '{tournament_data['name']}' created")
@@ -292,13 +290,11 @@ class TournamentController():
                 self.main_view.prompt_continue()
                 return
 
-
             Tournament.update_tournament(tournament.id, update_info, players)
             self.main_view.display_success_and_refresh("Tournament updated successfully!")
 
-
         except CancelAction:
-            self.main_view.display_success_and_refresh  ("\n🔙 Update cancelled. Returning to menu...")
+            self.main_view.display_success_and_refresh("\n🔙 Update cancelled. Returning to menu...")
             return
 
         except Exception as e:
