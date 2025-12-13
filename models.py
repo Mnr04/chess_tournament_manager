@@ -18,6 +18,12 @@ class Player():
         self.id = id if id else str(uuid.uuid4())
 
     def to_dict(self):
+        """
+        Serializes the player object into a dictionary.
+
+        Returns:
+            dict: The player's data ready for JSON saving.
+        """
         return {
             "id": self.id,
             "name": self.name,
@@ -28,6 +34,15 @@ class Player():
 
     @classmethod
     def from_dict(cls, data):
+        """
+        Creates a Player instance from a dictionary.
+
+        Args:
+            data (dict): The player data loaded from JSON.
+
+        Returns:
+            Player: An instance of the Player class.
+        """
         return cls(
             surname=data['surname'],
             name=data['name'],
@@ -143,7 +158,6 @@ class Tournament():
 
     @staticmethod
     def get_file_path(tournament_id):
-        # Get the path for tournament general info
         file_path = (
             Path("data") / "tournament" / tournament_id /
             "tournament_general_info.json"
@@ -151,7 +165,6 @@ class Tournament():
         return file_path
 
     def save_tournament(self):
-        # Transform Data
         tournament_data = self.to_dict()
         JsonManager.save_data(
             self.get_file_path(tournament_data['id']), tournament_data
@@ -196,6 +209,14 @@ class Tournament():
     def update_tournament(
         cls, tournament_id, new_data_dict, players_data_list
     ):
+        """
+        Updates tournament details and player list in the database.
+
+        Args:
+            tournament_id (str): The unique ID of the tournament.
+            new_data_dict (dict): The updated tournament information.
+            players_data_list (list): The list of updated player objects.
+        """
         tournament = cls.get_tournament_by_id(tournament_id)
 
         tournament.name = new_data_dict['name']
@@ -224,6 +245,12 @@ class Tournament():
 
     @staticmethod
     def initialize_standings(tournament_id):
+        """
+        Creates the initial standings file with all players having 0 points.
+
+        Args:
+            tournament_id (str): The ID of the tournament to initialize.
+        """
         file_path = (
             Path("data") / "tournament" / tournament_id / "standings.json"
         )
@@ -284,6 +311,15 @@ class Round:
 
     @staticmethod
     def get_round_players_list(tournament_id):
+        """
+        Retrieves the list of players with updated scores from standings file.
+
+        Args:
+            tournament_id (str): The ID of the current tournament.
+
+        Returns:
+            list: A list of Player objects with a 'score' attribute.
+        """
         file_path = (
             Path("data") / "tournament" / tournament_id / "standings.json"
         )
@@ -361,6 +397,13 @@ class Round:
 
     @staticmethod
     def get_all_pairs_played(tournament_id):
+        """
+        Retrieves a history of all matches played in the tournament.
+        Used to avoid duplicate matches.
+
+        Returns:
+            list: A list of pairs (lists of two player IDs).
+        """
         summary = Round.tournament_summary(tournament_id)
 
         pairs_list = []

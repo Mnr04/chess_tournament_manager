@@ -390,6 +390,8 @@ class TournamentView():
 
 
 class RoundView():
+
+    @staticmethod
     def continue_tournament(current_round):
         choices = [
             "Continue",
@@ -405,6 +407,7 @@ class RoundView():
         else:
             return "2"
 
+    @staticmethod
     def current_standings(players_list, current_round):
         print(f"\n--- 🥇 Current Standings round {current_round} ---")
         table_data = []
@@ -505,6 +508,16 @@ class InputView:
 
     @staticmethod
     def get_valid_date(prompt, default=None):
+        """
+        Prompts user for a date and validates the format.
+
+        Args:
+            prompt (str): The message to display to the user.
+            default (str, optional): The default value if input is empty.
+
+        Returns:
+            str: The valid date string or the default value.
+        """
         full_prompt = f"{prompt} ('return' to cancel): "
 
         while True:
@@ -562,6 +575,12 @@ class InputView:
 
     @staticmethod
     def get_valid_ine(prompt, default=None):
+        """
+        Prompts for a National Chess ID  and validates the format.
+
+        Returns:
+            str: The valid INE string.
+        """
         full_prompt = f"{prompt} ('return' to cancel): "
 
         while True:
