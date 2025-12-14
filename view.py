@@ -13,9 +13,12 @@ class CancelAction(Exception):
 class MainView:
 
     def welcome_message(self):
-        print("\n" + "*" * 30)
-        print("CHESS MANAGER".center(30))
-        print("*" * 30 + "\n")
+        print(r"""
+▄█████ ██  ██ ██████ ▄█████ ▄█████   ██▄  ▄██ ▄████▄ ███  ██ ▄████▄  ▄████  ██████ █████▄
+██     ██████ ██▄▄   ▀▀▀▄▄▄ ▀▀▀▄▄▄   ██ ▀▀ ██ ██▄▄██ ██ ▀▄██ ██▄▄██ ██  ▄▄▄ ██▄▄   ██▄▄██▄
+▀█████ ██  ██ ██▄▄▄▄ █████▀ █████▀   ██    ██ ██  ██ ██   ██ ██  ██  ▀███▀  ██▄▄▄▄ ██   ██
+
+              """)
 
     def finish_message(self):
         print("--- See you soon! ---")
@@ -608,7 +611,7 @@ class InputView:
             if not ine_input:
                 if default is not None:
                     return default
-            # 2 letters followed by 5 digits
+            # 2 letters followed by 5 digits (e.g. AB12345)
             elif re.match(r"^[A-Z]{2}[0-9]{5}$", ine_input):
                 return ine_input
             else:
