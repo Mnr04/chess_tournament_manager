@@ -313,12 +313,7 @@ class Round:
     def get_round_players_list(tournament_id):
         """
         Retrieves the list of players with updated scores from standings file.
-
-        Args:
-            tournament_id (str): The ID of the current tournament.
-
-        Returns:
-            list: A list of Player objects with a 'score' attribute.
+        Checks if the player still exists in the database to avoid crashes.
         """
         file_path = (
             Path("data") / "tournament" / tournament_id / "standings.json"
@@ -332,7 +327,10 @@ class Round:
             score = player['score']
 
             player_obj = Player.get_players_by_id(id)
-            # Create score
+
+            if player_obj is None:
+                continue
+
             player_obj.score = score
 
             players_list.append(player_obj)

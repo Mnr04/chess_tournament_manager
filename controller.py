@@ -3,8 +3,10 @@ from view import (
     ReportView, CancelAction
 )
 from models import Player, Tournament, Round, Match
+from database import JsonManager
 import datetime
 import random
+import os
 
 
 class MainController:
@@ -88,8 +90,8 @@ class PlayersController():
                 )
 
         except CancelAction:
-            self.main_view.display_success_and_refresh(
-                "\n🔙 Creation cancelled. Returning to menu..."
+            self.main_view.display_return(
+                "\n Creation cancelled. Returning to menu..."
                 )
             return
 
@@ -133,8 +135,8 @@ class PlayersController():
                 )
 
         except CancelAction:
-            self.main_view.display_success_and_refresh(
-                "\n🔙 Update cancelled. Returning to menu..."
+            self.main_view.display_return(
+                "\n Update cancelled. Returning to menu..."
                 )
             return
 
@@ -150,7 +152,7 @@ class PlayersController():
             return
 
         if not target_player:
-            self.display_success_and_refresh("No players to display")
+            self.main_view.display_return("No players to display")
             return
 
         player_info = Player.get_players_by_id(target_player.id)
@@ -246,10 +248,7 @@ class TournamentController():
                     )
 
                 if not s_players:
-                    choice = input(
-                        "No players selected. Cancel creation? (y/n): "
-                        )
-                    if choice.lower() == 'y':
+                    if self.main_view.prompt_cancel_creation():
                         return
                     continue
 
@@ -274,8 +273,8 @@ class TournamentController():
                 )
 
         except CancelAction:
-            self.main_view.display_success_and_refresh(
-                "\n🔙 Creation cancelled. Returning to menu..."
+            self.main_view.display_return(
+                "\n Creation cancelled. Returning to menu..."
                 )
             return
 
@@ -318,8 +317,8 @@ class TournamentController():
                 )
 
         except CancelAction:
-            self.main_view.display_success_and_refresh(
-                "\n🔙 Update cancelled. Returning to menu..."
+            self.main_view.display_return(
+                "\n Update cancelled. Returning to menu..."
                 )
             return
 
@@ -375,7 +374,7 @@ class TournamentController():
         all_players = Player.get_all_players()
         selected_players = []
 
-        print(f"\n--- Select {number_of_players} players ---")
+        self.main_view.display_player_selection(number_of_players)
 
         while len(selected_players) < number_of_players:
             candidates = [p for p in all_players if p not in selected_players]
@@ -405,7 +404,7 @@ class TournamentController():
             tournaments_to_display = all_tournaments
 
         if len(tournaments_to_display) == 0:
-            self.main_view.display_success_and_refresh(
+            self.main_view.display_return(
                 "No tournament to display."
                 )
 
@@ -419,7 +418,7 @@ class TournamentController():
         all_players = Player.get_all_players()
 
         while True:
-            print(f"\n--- 👥 CURRENT PLAYERS ({len(actual_players)}) ---")
+            self.main_view.display_current_players(len(actual_players))
             self.view.print_players_table(actual_players)
             action = self.view.display_manage_menu()
 
@@ -532,28 +531,34 @@ class RoundController:
         Args:
             tournament: The current tournament instance.
         """
-        # Create round count + Round Object
-        tournament.current_round += 1
-        start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        next_round_num = tournament.current_round + 1
+        round_name = f"Round {next_round_num}"
 
-        new_round = Round(f"Round {tournament.current_round}", start_time)
+        file_path = f"data/tournament/{tournament.id}/{round_name}/Match.json"
 
-        # Get Player + match history
-        players_list = Round.get_round_players_list(tournament.id)
+        if os.path.exists(file_path):
+            data = JsonManager.load_data(file_path)
+            new_round = Round.from_dict(data)
+            tournament.current_round += 1
 
-        random.shuffle(players_list)
-        s_players_list = sorted(
-            players_list, key=lambda p: p.score, reverse=True
-            )
-        match_history = Round.get_all_pairs_played(tournament.id)
+        else:
+            tournament.current_round += 1
+            start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            new_round = Round(round_name, start_time)
 
-        # Generate Pairs
-        new_round.matches = cls.generate_pairs(s_players_list, match_history)
+            players_list = Round.get_round_players_list(tournament.id)
+            random.shuffle(players_list)
 
-        # Create round file
-        new_round.save_round(tournament.id)
+            s_players_list = sorted(
+                players_list, key=lambda p: p.score, reverse=True
+                )
 
-        # Process Match and verify if finish
+            match_history = Round.get_all_pairs_played(tournament.id)
+
+            new_round.matches = cls.generate_pairs(s_players_list, match_history)
+
+            new_round.save_round(tournament.id)
+
         round_finished = MatchController.process_match(
             new_round.matches, tournament.id
             )
@@ -567,7 +572,6 @@ class RoundController:
         new_round.end_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         new_round.save_round(tournament.id)
 
-        # Save the Round
         tournament.save_tournament()
 
     @staticmethod

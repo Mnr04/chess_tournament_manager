@@ -53,6 +53,21 @@ class MainView:
         self.prompt_continue()
         self.clean_console()
 
+    def display_player_selection(self, number_of_players):
+        print(f"\n--- Select {number_of_players} players ---")
+
+    def display_current_players(self, nb_players):
+        print(f"\n---  CURRENT PLAYERS ({nb_players}) ---")
+
+    def prompt_cancel_creation(self):
+        response = input("No players selected. Cancel creation? (y/n): ").strip().lower()
+        return response == 'y'
+
+    def display_return(self, message):
+        print(message)
+        self.prompt_continue()
+        self.clean_console()
+
 
 class PlayersView():
 
